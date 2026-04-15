@@ -192,6 +192,7 @@ function ReportSelector({ reports, selected, onChange }) {
       )}
     </div>
   )
+}
 /* ─── TargetCard — Card horizontal de meta (Substitui o Gauge) ───────── */
 function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
   const safeVal = (typeof value === 'number' && isFinite(value)) ? value : 0
