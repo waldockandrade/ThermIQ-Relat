@@ -568,10 +568,9 @@ export default function Dashboard() {
     }
   }, [agg])
 
-  /* ── Série temporal dos KPIs — um ponto por relatório (delta por turno) ── */
+  /* ── Série temporal dos KPIs — evolução a cada 15 minutos (média dos relatórios) ── */
   const kpiSeries = useMemo(() => {
-    // Encontra a variável componente de cada KPI (primeira que bater)
-    // Encontra variável por nome E grupo de unidade física
+    // Encontra a variável componente de cada KPI
     function findV(unitGroup, ...terms) {
       return allVars.find(v =>
         matchVar(v.name, ...terms) &&
@@ -583,51 +582,68 @@ export default function Dashboard() {
     const vKwhCon = findV(ENERGY_UNITS, 'consumida', 'consumido')
     const vCavaco = findV(VOL_UNITS,    'cavaco', 'biomassa', 'combustível')
 
-    const kwhGer = [], kwhCon = [], vapCavaco = []
+    // Fator de conversão
+    const fKw  = convFactor(vKwhGer?.unit, 'kW')
+    const fKwh = convFactor(vKwhCon?.unit, 'kWh')
+    const fTon = convFactor(vVapor?.unit,  'ton')
+    const fKg  = convFactor(vVapor?.unit,  'kg')
+    const fM3  = convFactor(vCavaco?.unit, 'm³')
 
-    // Fator de conversão para a unidade canônica de cada variável
-    const fKw  = convFactor(vKwhGer?.unit, 'kW')   // energia gerada → kW
-    const fKwh = convFactor(vKwhCon?.unit, 'kWh')  // energia consumida → kWh
-    const fTon = convFactor(vVapor?.unit,  'ton')   // vapor → ton
-    const fKg  = convFactor(vVapor?.unit,  'kg')    // vapor → kg
-    const fM3  = convFactor(vCavaco?.unit, 'm³')    // cavaco → m³
-
-    // Ordena relatórios por data para linha do tempo coerente
-    const sorted = [...activeReports].sort((a, b) =>
-      (a.turnoInfo?.data || '').localeCompare(b.turnoInfo?.data || '') ||
-      (a.turnoInfo?.horaInicio || '').localeCompare(b.turnoInfo?.horaInicio || '')
-    )
-
-    sorted.forEach(rep => {
-      const lans = rep.lancamentos || {}
-      const datePart = rep.turnoInfo?.data
-        ? (() => { const [y,m,d] = (rep.turnoInfo.data).split('-'); return `${d}/${m}` })()
-        : '—'
-      const label = `${datePart} ${rep.turnoInfo?.turno || rep.turnoInfo?.horaInicio || ''}`
-
-      // Deltas do turno (tot_final - tot_inicial) com conversão de unidade
-      function slotDelta(varObj, factor) {
-        const e = varObj ? lans[varObj.id] : null
-        if (!e) return NaN
-        const d = parseFloat(e.tot_final || 0) - parseFloat(e.tot_inicial || 0)
-        return isFinite(d) ? d * factor : NaN
+    // Função para extrair média dos slots agrupados por horário
+    function getSlotAvg(varObj, factor) {
+      if (!varObj) return {}
+      const byTime = {}
+      activeReports.forEach(rep => {
+        const slots = rep.lancamentos?.[varObj.id]?.slots
+        if (!slots) return
+        Object.entries(slots).forEach(([time, val]) => {
+          const num = parseFloat(val)
+          if (isFinite(num)) {
+            if (!byTime[time]) byTime[time] = { sum: 0, count: 0 }
+            byTime[time].sum += num * factor
+            byTime[time].count++
+          }
+        })
+      })
+      const avgByTime = {}
+      for (const t in byTime) {
+        avgByTime[t] = byTime[t].sum / byTime[t].count
       }
+      return avgByTime
+    }
 
-      const vapor_ton = slotDelta(vVapor, fTon)
-      const vapor_kg  = slotDelta(vVapor, fKg)
-      const kw_ger    = slotDelta(vKwhGer, fKw)
-      const kwh_con   = slotDelta(vKwhCon, fKwh)
-      const cavaco_m3 = slotDelta(vCavaco, fM3)
+    const kw_map = getSlotAvg(vKwhGer, fKw)
+    const kwh_map = getSlotAvg(vKwhCon, fKwh)
+    const vapTon_map = getSlotAvg(vVapor, fTon)
+    const vapKg_map = getSlotAvg(vVapor, fKg)
+    const cav_map = getSlotAvg(vCavaco, fM3)
+
+    // Agrupa todos os horários únicos e ordena cronologicamente
+    const allTimes = new Set([...Object.keys(kw_map), ...Object.keys(kwh_map), ...Object.keys(vapTon_map), ...Object.keys(cav_map)])
+    const times = Array.from(allTimes).sort()
+
+    const kwhGer = []
+    const kwhCon = []
+    const vapCavaco = []
+
+    times.forEach(t => {
+      const v_ton = vapTon_map[t]
+      const v_kg = vapKg_map[t]
+      const p_kw = kw_map[t]
+      const p_kwh = kwh_map[t]
+      const p_cav = cav_map[t]
 
       // KPI 1: kW Gerado / ton Vapor
-      if (isFinite(vapor_ton) && isFinite(kw_ger) && vapor_ton > 0)
-        kwhGer.push({ label, real: round(kw_ger / vapor_ton, 3) })
+      if (v_ton > 0 && p_kw !== undefined)
+        kwhGer.push({ label: t, real: round(p_kw / v_ton, 3) })
+      
       // KPI 2: kWh Consumido / ton Vapor
-      if (isFinite(vapor_ton) && isFinite(kwh_con) && vapor_ton > 0)
-        kwhCon.push({ label, real: round(kwh_con / vapor_ton, 3) })
+      if (v_ton > 0 && p_kwh !== undefined)
+        kwhCon.push({ label: t, real: round(p_kwh / v_ton, 3) })
+      
       // KPI 3: kg Vapor / m³ Cavaco
-      if (isFinite(cavaco_m3) && isFinite(vapor_kg) && cavaco_m3 > 0)
-        vapCavaco.push({ label, real: round(vapor_kg / cavaco_m3, 3) })
+      if (p_cav > 0 && v_kg !== undefined)
+        vapCavaco.push({ label: t, real: round(v_kg / p_cav, 3) })
     })
 
     return { kwhGer, kwhCon, vapCavaco }
