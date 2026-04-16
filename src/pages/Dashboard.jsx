@@ -193,99 +193,85 @@ function ReportSelector({ reports, selected, onChange }) {
     </div>
   )
 }
-/* ─── GaugeCard — Substitui TargetCard e KPICard (Dedicado a Velocímetros e Metas) ───────── */
-function GaugeCard({ label, value, unit, meta, color, inverse, formulaLabel }) {
-  const safeVal = (typeof value === 'number' && isFinite(value)) ? value : 0;
-  const hasMeta = typeof meta === 'number' && isFinite(meta);
+/* ─── TargetCard — Card horizontal de meta (Substitui o Gauge) ───────── */
+function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
+  const safeVal = (typeof value === 'number' && isFinite(value)) ? value : 0
+  const hasMeta = typeof meta === 'number' && isFinite(meta)
   
-  let isSuccess = true;
-  let statusColor = color;
+  // Decide a cor do status da barra dependendo do inverse (consumo vs geração)
+  let statusColor = color 
+  let statusText = ''
   
   if (hasMeta) {
-    isSuccess = inverse ? (safeVal <= meta) : (safeVal >= meta);
-    statusColor = isSuccess ? '#10b981' : '#ef4444'; // Emerald ou Red
+    if (inverse) {
+      // Para consumo numérico (ex: kWh Consumido), o 'menor' (<= meta) é sucesso
+      statusColor = safeVal <= meta ? 'var(--leaf)' : 'var(--danger, #ef4444)'
+      statusText = safeVal <= meta ? 'Abaixo do teto (Bom)' : 'Acima do teto (Atenção)'
+    } else {
+      // Para geração (ex: kW Gerado), o 'maior' (>= meta) é sucesso
+      statusColor = safeVal >= meta ? 'var(--leaf)' : 'var(--warning, #eab308)'
+      statusText = safeVal >= meta ? 'Meta atingida!' : 'Abaixo da meta'
+    }
   }
 
-  // Escala para o gráfico de meia lua (0 a MaxVal)
-  let maxVal = 100;
-  if (hasMeta && meta > 0) {
-     maxVal = Math.max(meta * 1.5, safeVal * 1.2);
-  } else if (safeVal > 0) {
-     maxVal = safeVal * 1.5;
-  }
-  if (maxVal === 0) maxVal = 1;
-  const pct = Math.min(Math.max(safeVal / maxVal, 0), 1);
-  
-  // Geometria SVG (Raio = 75, Espessura = 14)
-  const r = 75;
-  const cx = 100;
-  const cy = 94;
-  
-  // O ângulo em radianos: pct=0 (Pi) -> pct=1 (0) 
-  const angle = Math.PI - (pct * Math.PI);
-  const valX = cx + r * Math.cos(angle);
-  const valY = cy - r * Math.sin(angle);
-  
-  // Caminho da porção preenchida
-  const filledPath = safeVal > 0 ? `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${valX} ${valY}` : '';
-
-  // Posição do pino da meta
-  let metaPos = null;
-  if (hasMeta) {
-    const metaPct = Math.min(Math.max(meta / maxVal, 0), 1);
-    const mAngle = Math.PI - (metaPct * Math.PI);
-    metaPos = { x: cx + r * Math.cos(mAngle), y: cy - r * Math.sin(mAngle) };
-  }
+  // Ajuste elástico da calha visual da barra para suportar a barra inteira
+  const maxVal = hasMeta ? Math.max(meta * 1.3, safeVal * 1.1) : (safeVal > 0 ? safeVal * 1.2 : 100)
+  const valPct = Math.min((safeVal / maxVal) * 100, 100)
+  const metaPct = hasMeta ? Math.min((meta / maxVal) * 100, 100) : 0
 
   return (
-    <div className="stat-card" style={{ padding: 'var(--space-xl) var(--space-md)', textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ fontWeight: 800, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>
-        {label}
-      </div>
-
-      <div style={{ position: 'relative', width: 200, height: 110 }}>
-        <svg width="200" height="110" viewBox="0 0 200 110">
-          {/* Calha Cinza de Fundo */}
-          <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} 
-                fill="none" stroke="var(--border)" strokeWidth="14" strokeLinecap="round" />
-          
-          {/* Arco colorido do valor atual */}
-          {filledPath && (
-            <path d={filledPath} 
-                  fill="none" stroke={statusColor} strokeWidth="14" strokeLinecap="round" 
-                  style={{ transition: 'all 0.8s ease-out' }} />
-          )}
-
-          {/* Pino Marcador da Meta */}
-          {metaPos && (
-             <g transform={`translate(${metaPos.x}, ${metaPos.y})`}>
-                <circle cx="0" cy="0" r="8" fill="var(--bg-card)" stroke={inverse ? '#f97316' : '#3b82f6'} strokeWidth="3" />
-             </g>
-          )}
-        </svg>
-
-        {/* Display central numérico */}
-        <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: '32px', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {safeVal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+    <div className="stat-card" style={{ padding: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+      {/* Cabeçalho */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ minWidth: 44, width: 44, height: 44, borderRadius: 'var(--radius-md)', background: `${color}18`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon size={20} style={{ color }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {label}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-            {unit}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+              {safeVal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+            </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
+              {unit}
+            </span>
           </div>
         </div>
       </div>
 
+      {/* Tracker da Meta */}
       {hasMeta && (
-         <div style={{ marginTop: 24, fontSize: '12px', fontWeight: 700, color: statusColor, background: `${statusColor}18`, padding: '4px 12px', borderRadius: 16 }}>
-            Meta demarcada: {meta.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-         </div>
-      )}
-
-      {/* Fórmula no rodapé, mitigando dupla indicação de conteúdo */}
-      {formulaLabel && (
-         <div style={{ marginTop: 16, padding: '8px', background: 'var(--bg-surface)', borderRadius: 8, fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, border: '1px solid var(--border-subtle)', width: '90%' }}>
-            {formulaLabel}
-         </div>
+        <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: 8, fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Meta: {meta.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</span>
+            <span style={{ color: statusColor }}>{statusText}</span>
+          </div>
+          
+          <div style={{ position: 'relative', height: 10, background: 'rgba(0,0,0,0.04)', borderRadius: 5, overflow: 'hidden' }}>
+             {/* Sombra demarcando limitador da meta na calha invisível */}
+             <div style={{
+                position: 'absolute', top: 0, bottom: 0, left: 0, width: `${metaPct}%`,
+                background: inverse ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.03)', 
+                borderRight: inverse ? 'none' : '1px solid rgba(0,0,0,0.1)'
+             }} />
+             
+             {/* Barra progressiva que pinta esticando conforme o value */}
+             <div style={{
+                position: 'absolute', top: 0, bottom: 0, left: 0, width: `${valPct}%`,
+                background: `linear-gradient(90deg, ${statusColor}cc, ${statusColor})`,
+                borderRadius: 5, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: `0 0 6px ${statusColor}44`
+             }} />
+             
+             {/* Traço divisor visível no alvo cravado */}
+             <div style={{
+                position: 'absolute', top: 0, bottom: 0, left: `${metaPct}%`, width: 2,
+                background: 'var(--text-primary)', transform: 'translateX(-50%)', opacity: 0.6
+             }} />
+          </div>
+        </div>
       )}
     </div>
   )
@@ -348,7 +334,39 @@ function AccumCard({ label, value, unit, max, color, icon: Icon, reportCount }) 
   )
 }
 
+/* ─── KPI Card ───────────────────────────────────── */
+function KPICard({ label, numerador, denominador, result, unit, numLabel, denLabel }) {
+  return (
+    <div className="stat-card" style={{ padding:'var(--space-lg)' }}>
+      <div className="stat-label" style={{ marginBottom:8 }}>{label}</div>
 
+      {/* Fórmula visual */}
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12, flexWrap:'wrap' }}>
+        <div style={{
+          background:'var(--accent-soft)', border:'1px solid rgba(249,115,22,0.2)',
+          borderRadius:'var(--radius-sm)', padding:'4px 10px',
+          fontSize:'var(--text-xs)', color:'var(--accent-dark)', fontWeight:600, textAlign:'center'
+        }}>
+          <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:1 }}>{numLabel}</div>
+          {fmt(numerador, 1)}
+        </div>
+        <span style={{ color:'var(--text-muted)', fontWeight:700, fontSize:16 }}>÷</span>
+        <div style={{
+          background:'var(--leaf-soft)', border:'1px solid rgba(34,197,94,0.2)',
+          borderRadius:'var(--radius-sm)', padding:'4px 10px',
+          fontSize:'var(--text-xs)', color:'var(--leaf-dark)', fontWeight:600, textAlign:'center'
+        }}>
+          <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:1 }}>{denLabel}</div>
+          {fmt(denominador, 1)}
+        </div>
+        <span style={{ color:'var(--text-muted)', fontWeight:700 }}>=</span>
+        <div style={{ fontSize:'var(--text-xl)', fontWeight:800, color:'var(--text-primary)' }}>
+          {result !== null ? fmt(result, 3) : '—'}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 /* ─── Tooltip customizado ────────────────────────── */
 function CustomTooltip({ active, payload, label }) {
@@ -726,36 +744,41 @@ export default function Dashboard() {
       {/* ═══════════════════════════════════════════════
           SEÇÃO 2 — INDICADORES DE EFICIÊNCIA
       ═══════════════════════════════════════════════ */}
-      <div className="section-label">Indicadores de Eficiência — Velocímetros com Metas</div>
-      <div className="gauges-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-lg)', marginBottom: 'var(--space-xl)' }}>
-        <GaugeCard
+      <div className="section-label">Indicadores de Eficiência — Status das Metas</div>
+      {/* TargetCards dos KPIs */}
+      <div className="grid-3" style={{ marginBottom:'var(--space-lg)' }}>
+        <TargetCard
           label="kW Gerado / ton Vapor"
           value={kpis.kwhPorVapor ?? 0}
           unit="kW/ton"
           color="#f97316"
+          icon={Zap}
           meta={kpiMetas.kwhGer}
           inverse={false}
-          formulaLabel={kpis.dKwhGer && kpis.dVapor ? `${fmt(kpis.dKwhGer, 1)} kW ÷ ${fmt(kpis.dVapor, 1)} ton` : null}
         />
-        <GaugeCard
+        <TargetCard
           label="kWh Consumido / ton Vapor"
           value={kpis.kwhConsPorVap ?? 0}
           unit="kWh/ton"
           color="#a855f7"
+          icon={Activity}
           meta={kpiMetas.kwhCon}
           inverse={true} 
-          formulaLabel={kpis.dKwhCon && kpis.dVapor ? `${fmt(kpis.dKwhCon, 1)} kWh ÷ ${fmt(kpis.dVapor, 1)} ton` : null}
         />
-        <GaugeCard
+        <TargetCard
           label="kg Vapor / m³ Cavaco"
           value={kpis.vaporPorCavaco ?? 0}
           unit="kg/m³"
           color="#22c55e"
+          icon={Wind}
           meta={kpiMetas.vaporCavaco}
           inverse={false}
-          formulaLabel={kpis.dVaporKg && kpis.dCavaco ? `${fmt(kpis.dVaporKg, 1)} kg ÷ ${fmt(kpis.dCavaco, 1)} m³` : null}
         />
-      </div>      {/* ═══════════════════════════════════════════════
+      </div>
+
+
+
+      {/* ═══════════════════════════════════════════════
           SEÇÃO 2b — GRÁFICOS POR KPI (Meta vs. Real)
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Evolução dos Indicadores por Relatório — Meta vs. Real</div>
