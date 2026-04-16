@@ -198,78 +198,123 @@ function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
   const safeVal = (typeof value === 'number' && isFinite(value)) ? value : 0
   const hasMeta = typeof meta === 'number' && isFinite(meta)
   
-  // Decide a cor do status da barra dependendo do inverse (consumo vs geração)
-  let statusColor = color 
+  let isSuccess = true
+  let statusColor = color
   let statusText = ''
+  let diffStr = ''
+  let diffVal = 0
   
   if (hasMeta) {
+    isSuccess = inverse ? (safeVal <= meta) : (safeVal >= meta)
+    statusColor = isSuccess ? 'var(--leaf)' : 'var(--danger, #ef4444)'
+    
+    if (meta > 0) {
+      const diff = ((safeVal - meta) / meta) * 100
+      const sign = diff > 0 ? '+' : ''
+      diffStr = `${sign}${diff.toFixed(1)}%`
+      diffVal = Math.abs(safeVal - meta)
+    }
+    
+    // Texto de status detalhado
     if (inverse) {
-      // Para consumo numérico (ex: kWh Consumido), o 'menor' (<= meta) é sucesso
-      statusColor = safeVal <= meta ? 'var(--leaf)' : 'var(--danger, #ef4444)'
-      statusText = safeVal <= meta ? 'Abaixo do teto (Bom)' : 'Acima do teto (Atenção)'
+      statusText = safeVal <= meta ? 'Dentro do Limite' : 'Acima do Teto'
     } else {
-      // Para geração (ex: kW Gerado), o 'maior' (>= meta) é sucesso
-      statusColor = safeVal >= meta ? 'var(--leaf)' : 'var(--warning, #eab308)'
-      statusText = safeVal >= meta ? 'Meta atingida!' : 'Abaixo da meta'
+      statusText = safeVal >= meta ? 'Meta Atingida' : 'Abaixo da Meta'
     }
   }
 
-  // Ajuste elástico da calha visual da barra para suportar a barra inteira
-  const maxVal = hasMeta ? Math.max(meta * 1.3, safeVal * 1.1) : (safeVal > 0 ? safeVal * 1.2 : 100)
-  const valPct = Math.min((safeVal / maxVal) * 100, 100)
-  const metaPct = hasMeta ? Math.min((meta / maxVal) * 100, 100) : 0
-
   return (
-    <div className="stat-card" style={{ padding: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+    <div className="stat-card" style={{ 
+      padding: 'var(--space-xl)', 
+      position: 'relative',
+      overflow: 'hidden',
+      border: hasMeta ? `1px solid ${statusColor}44` : '1px solid var(--border)',
+      background: hasMeta ? `linear-gradient(135deg, var(--bg-card) 30%, ${statusColor}0a 100%)` : 'var(--bg-card)',
+      boxShadow: hasMeta ? `0 8px 32px ${statusColor}14` : 'var(--shadow-sm)',
+      display: 'flex', flexDirection: 'column', gap: 16
+    }}>
+      {/* Efeito Glow de fundo */}
+      {hasMeta && (
+        <div style={{
+          position: 'absolute', top: -60, right: -60, width: 160, height: 160,
+          background: `radial-gradient(circle, ${statusColor}1a 0%, transparent 70%)`,
+          borderRadius: '50%', pointerEvents: 'none'
+        }} />
+      )}
+
       {/* Cabeçalho */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ minWidth: 44, width: 44, height: 44, borderRadius: 'var(--radius-md)', background: `${color}18`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={20} style={{ color }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {label}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ 
+            width: 46, height: 46, borderRadius: 12, 
+            background: hasMeta ? `${statusColor}18` : `${color}18`, 
+            color: hasMeta ? statusColor : color,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: hasMeta ? `0 4px 12px ${statusColor}22` : 'none',
+          }}>
+             <Icon size={22} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-              {safeVal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
-              {unit}
-            </span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              {label}
+            </div>
+            {hasMeta && (
+               <div style={{ fontSize: '13px', fontWeight: 600, color: statusColor, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor, boxShadow: `0 0 8px ${statusColor}` }} />
+                  {statusText}
+               </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Tracker da Meta */}
-      {hasMeta && (
-        <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: 8, fontWeight: 600 }}>
-            <span style={{ color: 'var(--text-muted)' }}>Meta: {meta.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</span>
-            <span style={{ color: statusColor }}>{statusText}</span>
+      {/* Bloco de Valor Principal */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 12, zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontSize: '42px', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', lineHeight: 1 }}>
+            {safeVal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+          </span>
+          <span style={{ fontSize: '15px', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {unit}
+          </span>
+        </div>
+        
+        {/* Badge de Percentual de Avanço/Recuo */}
+        {hasMeta && (
+          <div style={{ 
+            padding: '6px 14px', borderRadius: 24, 
+            background: `${statusColor}18`, color: statusColor,
+            fontWeight: 800, fontSize: '14px', border: `1px solid ${statusColor}33`,
+            boxShadow: `0 2px 10px ${statusColor}11`
+          }}>
+            {diffStr}
           </div>
-          
-          <div style={{ position: 'relative', height: 10, background: 'rgba(0,0,0,0.04)', borderRadius: 5, overflow: 'hidden' }}>
-             {/* Sombra demarcando limitador da meta na calha invisível */}
-             <div style={{
-                position: 'absolute', top: 0, bottom: 0, left: 0, width: `${metaPct}%`,
-                background: inverse ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.03)', 
-                borderRight: inverse ? 'none' : '1px solid rgba(0,0,0,0.1)'
-             }} />
-             
-             {/* Barra progressiva que pinta esticando conforme o value */}
-             <div style={{
-                position: 'absolute', top: 0, bottom: 0, left: 0, width: `${valPct}%`,
-                background: `linear-gradient(90deg, ${statusColor}cc, ${statusColor})`,
-                borderRadius: 5, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: `0 0 6px ${statusColor}44`
-             }} />
-             
-             {/* Traço divisor visível no alvo cravado */}
-             <div style={{
-                position: 'absolute', top: 0, bottom: 0, left: `${metaPct}%`, width: 2,
-                background: 'var(--text-primary)', transform: 'translateX(-50%)', opacity: 0.6
-             }} />
+        )}
+      </div>
+
+      {/* Caixa de Comparativo Direto */}
+      {hasMeta && (
+        <div style={{ 
+          marginTop: 8, padding: '12px 16px', background: 'var(--bg-surface)', 
+          borderRadius: 12, border: '1px solid var(--border-subtle)', 
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', zIndex: 1
+        }}>
+          <div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Objetivo (Meta)
+            </div>
+            <div style={{ fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 800, marginTop: 2 }}>
+              {meta.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>{unit}</span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Desvio Real
+            </div>
+            <div style={{ fontSize: '16px', color: statusColor, fontWeight: 800, marginTop: 2 }}>
+              {diffVal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} <span style={{ fontSize: '12px', fontWeight: 600, color: statusColor, opacity: 0.7 }}>{unit}</span>
+            </div>
           </div>
         </div>
       )}
