@@ -56,21 +56,18 @@ function save(key, value) {
 
 /* ---- Default Dashboard Config ---- */
 const DEFAULT_DASHBOARD_CONFIG = {
-  // Referenciais das variáveis quantitativas (valor máximo esperado — base da barra de progresso)
-  quantMaxes: {
-    agua:            5000,
-    vapor:           2000,
-    energiaGerada:   50000,
-    energiaConsumida:20000,
-    combustivel:     3000,
-  },
-  // Metas dos KPIs de eficiência
-  kpiMetas: {
-    kwhGer:      null,  // kWh Gerado / t Vapor
-    kwhCon:      null,  // kWh Consumido / t Vapor
-    vaporCavaco: null,  // t Vapor / m³ Cavaco
-  },
-  // A-04: Metas das variáveis qualitativas (persistidas por varId)
+  customQuantitatives: [
+    { id: 'q-1', varId: 'v-7', label: 'Água de Alimentação', max: 5000, color: '#3b82f6', iconName: 'Droplets', factor: 1, unitOverride: 'ton' },
+    { id: 'q-2', varId: 'v-6', label: 'Vapor Gerado', max: 2000, color: '#22c55e', iconName: 'Wind', factor: 1, unitOverride: 'ton' },
+    { id: 'q-3', varId: 'v-9', label: 'Energia Gerada', max: 50000, color: '#f97316', iconName: 'Zap', factor: 1000, unitOverride: 'kW' },
+    { id: 'q-4', varId: 'v-10', label: 'Energia Consumida', max: 20000, color: '#a855f7', iconName: 'Activity', factor: 1, unitOverride: 'kWh' },
+    { id: 'q-5', varId: 'v-8', label: 'Combustível (Cavaco)', max: 3000, color: '#eab308', iconName: 'Flame', factor: 1, unitOverride: 'm³' }
+  ],
+  customKPIs: [
+    { id: 'k-1', label: 'kW Gerado / ton Vapor', numVarId: 'v-9', numFactor: 1000, denVarId: 'v-6', denFactor: 1, unit: 'kW/ton', meta: null, inverse: false, color: '#f97316' },
+    { id: 'k-2', label: 'kWh Consumido / ton Vapor', numVarId: 'v-10', numFactor: 1, denVarId: 'v-6', denFactor: 1, unit: 'kWh/ton', meta: null, inverse: true, color: '#a855f7' },
+    { id: 'k-3', label: 'kg Vapor / m³ Cavaco', numVarId: 'v-6', numFactor: 1000, denVarId: 'v-8', denFactor: 1, unit: 'kg/m³', meta: null, inverse: false, color: '#22c55e' }
+  ],
   qualMetas: {},
 }
 
@@ -80,12 +77,30 @@ export function AppDataProvider({ children }) {
   const [downtimes, setDowntimes]     = useState(() => load('thermiq_downtimes', []))
   const [maintenances, setMaintenances] = useState(() => load('thermiq_maintenances', []))
   const [dashboardConfig, setDashboardConfig] = useState(() => {
-    const stored = load('thermiq_dashboard_config', DEFAULT_DASHBOARD_CONFIG)
-    // Garante que chaves novas do default sejam mergeadas sem apagar configurações salvas
+    const stored = load('thermiq_dashboard_config', null)
+    
+    // Migração de estado dos Dashboards antigos baseados em dict "quantMaxes" e "kpiMetas"
+    if (stored && !stored.customQuantitatives) {
+       stored.customQuantitatives = [
+         { id: 'q-1', varId: 'v-7', label: 'Água de Alimentação', max: stored.quantMaxes?.agua || 5000, color: '#3b82f6', iconName: 'Droplets', factor: 1, unitOverride: 'ton' },
+         { id: 'q-2', varId: 'v-6', label: 'Vapor Gerado', max: stored.quantMaxes?.vapor || 2000, color: '#22c55e', iconName: 'Wind', factor: 1, unitOverride: 'ton' },
+         { id: 'q-3', varId: 'v-9', label: 'Energia Gerada', max: stored.quantMaxes?.energiaGerada || 50000, color: '#f97316', iconName: 'Zap', factor: 1000, unitOverride: 'kW' },
+         { id: 'q-4', varId: 'v-10', label: 'Energia Consumida', max: stored.quantMaxes?.energiaConsumida || 20000, color: '#a855f7', iconName: 'Activity', factor: 1, unitOverride: 'kWh' },
+         { id: 'q-5', varId: 'v-8', label: 'Combustível (Cavaco)', max: stored.quantMaxes?.combustivel || 3000, color: '#eab308', iconName: 'Flame', factor: 1, unitOverride: 'm³' }
+       ]
+    }
+    if (stored && !stored.customKPIs) {
+       stored.customKPIs = [
+         { id: 'k-1', label: 'kW Gerado / ton Vapor', numVarId: 'v-9', numFactor: 1000, denVarId: 'v-6', denFactor: 1, unit: 'kW/ton', meta: stored.kpiMetas?.kwhGer || null, inverse: false, color: '#f97316' },
+         { id: 'k-2', label: 'kWh Consumido / ton Vapor', numVarId: 'v-10', numFactor: 1, denVarId: 'v-6', denFactor: 1, unit: 'kWh/ton', meta: stored.kpiMetas?.kwhCon || null, inverse: true, color: '#a855f7' },
+         { id: 'k-3', label: 'kg Vapor / m³ Cavaco', numVarId: 'v-6', numFactor: 1000, denVarId: 'v-8', denFactor: 1, unit: 'kg/m³', meta: stored.kpiMetas?.vaporCavaco || null, inverse: false, color: '#22c55e' }
+       ]
+    }
+
     return {
-      quantMaxes: { ...DEFAULT_DASHBOARD_CONFIG.quantMaxes, ...stored?.quantMaxes },
-      kpiMetas:   { ...DEFAULT_DASHBOARD_CONFIG.kpiMetas,   ...stored?.kpiMetas },
-      qualMetas:  { ...DEFAULT_DASHBOARD_CONFIG.qualMetas,  ...stored?.qualMetas }, // A-04
+      customQuantitatives: stored?.customQuantitatives || DEFAULT_DASHBOARD_CONFIG.customQuantitatives,
+      customKPIs:          stored?.customKPIs || DEFAULT_DASHBOARD_CONFIG.customKPIs,
+      qualMetas:           { ...DEFAULT_DASHBOARD_CONFIG.qualMetas, ...stored?.qualMetas }
     }
   })
 
@@ -199,10 +214,14 @@ export function AppDataProvider({ children }) {
 
   /* ---- DASHBOARD CONFIG ---- */
   function updateDashboardConfig(section, key, value) {
-    setDashboardConfig(prev => ({
-      ...prev,
-      [section]: { ...prev[section], [key]: value },
-    }))
+    if (key === null || key === undefined) {
+      setDashboardConfig(prev => ({ ...prev, [section]: value }))
+    } else {
+      setDashboardConfig(prev => ({
+        ...prev,
+        [section]: { ...prev[section], [key]: value },
+      }))
+    }
   }
 
   return (

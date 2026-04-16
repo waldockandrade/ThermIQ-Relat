@@ -7,7 +7,12 @@ import {
 import {
   Droplets, Wind, Zap, Flame, Activity, TrendingUp,
   ChevronDown, Check, FileText, X, Calendar, Target, Edit3,
+  Box, Battery, Cpu, Filter, Sun, Thermometer, Info
 } from 'lucide-react'
+
+const ICONS = {
+  Droplets, Wind, Zap, Flame, Activity, TrendingUp, Box, Battery, Cpu, Filter, Sun, Thermometer, Target, Info
+}
 import './Dashboard.css'
 
 /* ─── Helpers ────────────────────────────────────── */
@@ -525,129 +530,92 @@ export default function Dashboard() {
   }
   const metaVal  = metas[chartVarId] ?? null
 
-  // KPI metas e max vem do contexto (configurados em Variáveis de Processo)
-  const qMax     = dashboardConfig?.quantMaxes  || {}
-  const kpiMetas = dashboardConfig?.kpiMetas    || {}
-
   /* ── Relatórios ativos ── */
   const activeReports = useMemo(
     () => reports.filter(r => selectedIds.has(r.id)),
     [reports, selectedIds]
   )
 
-  /* ── Aggregates (gauges) ── */
-  // Cada acumulador é convertido para a unidade canônica usada nos displays e KPIs
-  const agg = useMemo(() => ({
-    agua:            deltaConvert(activeReports, allVars, 'ton',  'água','agua','alimentação','alimentacao'),
-    vapor:           deltaConvert(activeReports, allVars, 'ton',  'vazão vapor','vapor gerado','vapor'),
-    energiaGerada:   deltaConvert(activeReports, allVars, 'kW',   'gerada','gerado'),   // sempre em kW
-    energiaConsumida:deltaConvert(activeReports, allVars, 'kWh',  'consumida','consumido'), // sempre em kWh
-    combustivel:     deltaConvert(activeReports, allVars, 'm³',   'cavaco','biomassa','combustível'),
-    // vapor em kg para o KPI 3
-    vaporKg:         deltaConvert(activeReports, allVars, 'kg',   'vazão vapor','vapor gerado','vapor'),
-  }), [activeReports, allVars])
-
-  /* ── KPIs consolidados (soma dos relatórios ativos) ── */
-  // Todos os valores já vêm nas unidades canônicas via deltaConvert:
-  //   energiaGerada  → kW   | energiaConsumida → kWh
-  //   vapor          → ton  | vaporKg          → kg  | combustivel → m³
-  const kpis = useMemo(() => {
-    const dVapor_ton = agg.vapor       || null   // ton
-    const dKw        = agg.energiaGerada   || null   // kW  (já convertido)
-    const dKwh       = agg.energiaConsumida || null  // kWh (já convertido)
-    const dCavaco_m3 = agg.combustivel || null        // m³
-    const dVapor_kg  = agg.vaporKg     || null        // kg
-    return {
-      // KPI 1: kW Gerado / ton Vapor  →  kW/ton
-      kwhPorVapor:   dVapor_ton && dKw   ? round(dKw   / dVapor_ton, 3) : null,
-      // KPI 2: kWh Consumido / ton Vapor  →  kWh/ton
-      kwhConsPorVap: dVapor_ton && dKwh  ? round(dKwh  / dVapor_ton, 3) : null,
-      // KPI 3: kg Vapor / m³ Cavaco  →  kg/m³
-      vaporPorCavaco:dCavaco_m3 && dVapor_kg ? round(dVapor_kg / dCavaco_m3, 3) : null,
-      dVapor: dVapor_ton, dKwhGer: dKw, dKwhCon: dKwh, dCavaco: dCavaco_m3, dVaporKg: dVapor_kg,
-    }
-  }, [agg])
-
-  /* ── Série temporal dos KPIs — evolução a cada 15 minutos (média dos relatórios) ── */
-  const kpiSeries = useMemo(() => {
-    // Encontra a variável componente de cada KPI
-    function findV(unitGroup, ...terms) {
-      return allVars.find(v =>
-        matchVar(v.name, ...terms) &&
-        unitGroup.includes((v.unit || '').trim().toLowerCase())
-      )
-    }
-    const vVapor  = findV(MASS_UNITS,   'vazão vapor', 'vapor gerado', 'vapor')
-    const vKwhGer = findV(ENERGY_UNITS, 'gerada', 'gerado')
-    const vKwhCon = findV(ENERGY_UNITS, 'consumida', 'consumido')
-    const vCavaco = findV(VOL_UNITS,    'cavaco', 'biomassa', 'combustível')
-
-    // Fator de conversão
-    const fKw  = convFactor(vKwhGer?.unit, 'kW')
-    const fKwh = convFactor(vKwhCon?.unit, 'kWh')
-    const fTon = convFactor(vVapor?.unit,  'ton')
-    const fKg  = convFactor(vVapor?.unit,  'kg')
-    const fM3  = convFactor(vCavaco?.unit, 'm³')
-
-    // Função para extrair média dos slots agrupados por horário
-    function getSlotAvg(varObj, factor) {
-      if (!varObj) return {}
-      const byTime = {}
+  /* ── 1. Indicadores Quantitativos Dinâmicos ── */
+  const quantitativesData = useMemo(() => {
+    return (dashboardConfig.customQuantitatives || []).map(q => {
+      let total = 0
       activeReports.forEach(rep => {
-        const slots = rep.lancamentos?.[varObj.id]?.slots
-        if (!slots) return
-        Object.entries(slots).forEach(([time, val]) => {
-          const num = parseFloat(val)
-          if (isFinite(num)) {
-            if (!byTime[time]) byTime[time] = { sum: 0, count: 0 }
-            byTime[time].sum += num * factor
-            byTime[time].count++
-          }
-        })
+        const e = rep.lancamentos?.[q.varId]
+        if (e) {
+          const val = parseFloat(e.tot_final || 0) - parseFloat(e.tot_inicial || 0)
+          if (isFinite(val)) total += val
+        }
       })
-      const avgByTime = {}
-      for (const t in byTime) {
-        avgByTime[t] = byTime[t].sum / byTime[t].count
+      const vObj = allVars.find(v => v.id === q.varId)
+      return { ...q, total, finalUnit: vObj?.unit || '' }
+    })
+  }, [activeReports, dashboardConfig.customQuantitatives, allVars])
+
+  /* ── 2. Série temporal e média dos KPIs Dinâmicos ── */
+  const customKPIData = useMemo(() => {
+    const customKPIs = dashboardConfig.customKPIs || []
+    const results = []
+
+    customKPIs.forEach(k => {
+      function getSlotAvg(varId, factor) {
+        if (!varId) return {}
+        const byTime = {}
+        activeReports.forEach(rep => {
+          const slots = rep.lancamentos?.[varId]?.slots
+          if (!slots) return
+          Object.entries(slots).forEach(([time, val]) => {
+            const num = parseFloat(val)
+            if (isFinite(num)) {
+              if (!byTime[time]) byTime[time] = { sum: 0, count: 0 }
+              byTime[time].sum += num * factor
+              byTime[time].count++
+            }
+          })
+        })
+        const avgByTime = {}
+        for (const t in byTime) {
+          avgByTime[t] = byTime[t].sum / byTime[t].count
+        }
+        return avgByTime
       }
-      return avgByTime
-    }
 
-    const kw_map = getSlotAvg(vKwhGer, fKw)
-    const kwh_map = getSlotAvg(vKwhCon, fKwh)
-    const vapTon_map = getSlotAvg(vVapor, fTon)
-    const vapKg_map = getSlotAvg(vVapor, fKg)
-    const cav_map = getSlotAvg(vCavaco, fM3)
+      const numMap = getSlotAvg(k.numVarId, k.numFactor || 1)
+      const denMap = getSlotAvg(k.denVarId, k.denFactor || 1)
 
-    // Agrupa todos os horários únicos e ordena cronologicamente
-    const allTimes = new Set([...Object.keys(kw_map), ...Object.keys(kwh_map), ...Object.keys(vapTon_map), ...Object.keys(cav_map)])
-    const times = Array.from(allTimes).sort()
+      const allTimes = new Set([...Object.keys(numMap), ...Object.keys(denMap)])
+      const times = Array.from(allTimes).sort()
 
-    const kwhGer = []
-    const kwhCon = []
-    const vapCavaco = []
-
-    times.forEach(t => {
-      const v_ton = vapTon_map[t]
-      const v_kg = vapKg_map[t]
-      const p_kw = kw_map[t]
-      const p_kwh = kwh_map[t]
-      const p_cav = cav_map[t]
-
-      // KPI 1: kW Gerado / ton Vapor
-      if (v_ton > 0 && p_kw !== undefined)
-        kwhGer.push({ label: t, real: round(p_kw / v_ton, 3) })
+      const series = []
+      let totalKPI = 0
+      let validPoints = 0
       
-      // KPI 2: kWh Consumido / ton Vapor
-      if (v_ton > 0 && p_kwh !== undefined)
-        kwhCon.push({ label: t, real: round(p_kwh / v_ton, 3) })
-      
-      // KPI 3: kg Vapor / m³ Cavaco
-      if (p_cav > 0 && v_kg !== undefined)
-        vapCavaco.push({ label: t, real: round(v_kg / p_cav, 3) })
+      times.forEach(t => {
+        const n = numMap[t]
+        const d = denMap[t]
+        if (n !== undefined && d !== undefined && d > 0) {
+          const ratio = n / d
+          series.push({ label: t, real: round(ratio, 3) })
+          totalKPI += ratio
+          validPoints++
+        }
+      })
+
+      const averageValue = validPoints > 0 ? totalKPI / validPoints : null
+      results.push({ ...k, series, averageValue })
     })
 
-    return { kwhGer, kwhCon, vapCavaco }
-  }, [activeReports, allVars])
+    return results
+  }, [activeReports, dashboardConfig.customKPIs])
+
+  function updateKPIMeta(id, metaVal) {
+    const arr = [...(dashboardConfig.customKPIs || [])]
+    const idx = arr.findIndex(k => k.id === id)
+    if (idx !== -1) {
+      arr[idx] = { ...arr[idx], meta: metaVal }
+      updateDashboardConfig('customKPIs', null, arr)
+    }
+  }
 
   /* ── Dados do gráfico — variável qualitativa selecionada ── */
   const chartData = useMemo(() => {
@@ -696,7 +664,6 @@ export default function Dashboard() {
 
   return (
     <div className="fade-in">
-
       {/* ── Cabeçalho ── */}
       <div className="page-header">
         <div className="page-header-row">
@@ -750,64 +717,70 @@ export default function Dashboard() {
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Variáveis Quantitativas — Acumulado dos Relatórios Selecionados</div>
       <div className="grid-3" style={{ marginBottom:'var(--space-xl)', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))' }}>
-        <AccumCard label="Água de Alimentação" value={agg.agua}             unit="ton" max={qMax.agua            || 5000}  color="#3b82f6" icon={Droplets} reportCount={activeReports.length} />
-        <AccumCard label="Vapor Gerado"          value={agg.vapor}            unit="ton" max={qMax.vapor           || 2000}  color="#22c55e" icon={Wind}    reportCount={activeReports.length} />
-        <AccumCard label="Energia Gerada"         value={agg.energiaGerada}    unit="kW"  max={qMax.energiaGerada   || 50000} color="#f97316" icon={Zap}     reportCount={activeReports.length} />
-        <AccumCard label="Energia Consumida"      value={agg.energiaConsumida} unit="kWh" max={qMax.energiaConsumida|| 20000} color="#a855f7" icon={Activity}reportCount={activeReports.length} />
-        <AccumCard label="Combustível (Cavaco)"  value={agg.combustivel}      unit="m³"  max={qMax.combustivel     || 3000}  color="#eab308" icon={Flame}   reportCount={activeReports.length} />
+        {quantitativesData.map(q => {
+          const IconComp = ICONS[q.iconName] || Box
+          return (
+            <AccumCard 
+              key={q.id} 
+              label={q.label} 
+              value={q.total} 
+              unit={q.finalUnit} 
+              max={q.max || 100} 
+              color={q.color} 
+              icon={IconComp} 
+              reportCount={activeReports.length} 
+            />
+          )
+        })}
+        {quantitativesData.length === 0 && (
+          <p style={{ fontSize:'var(--text-sm)', color:'var(--text-muted)', padding:'var(--space-md)' }}>
+            Nenhum indicador quantitativo configurado. Adicione-os em Variáveis de Processo.
+          </p>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════
           SEÇÃO 2 — INDICADORES DE EFICIÊNCIA
       ═══════════════════════════════════════════════ */}
-      <div className="section-label">Indicadores de Eficiência — Status das Metas</div>
-      {/* TargetCards dos KPIs */}
+      <div className="section-label">Métricas de Eficiência — Status das Metas</div>
       <div className="grid-3" style={{ marginBottom:'var(--space-lg)' }}>
-        <TargetCard
-          label="kW Gerado / ton Vapor"
-          value={kpis.kwhPorVapor ?? 0}
-          unit="kW/ton"
-          color="#f97316"
-          icon={Zap}
-          meta={kpiMetas.kwhGer}
-          inverse={false}
-        />
-        <TargetCard
-          label="kWh Consumido / ton Vapor"
-          value={kpis.kwhConsPorVap ?? 0}
-          unit="kWh/ton"
-          color="#a855f7"
-          icon={Activity}
-          meta={kpiMetas.kwhCon}
-          inverse={true} 
-        />
-        <TargetCard
-          label="kg Vapor / m³ Cavaco"
-          value={kpis.vaporPorCavaco ?? 0}
-          unit="kg/m³"
-          color="#22c55e"
-          icon={Wind}
-          meta={kpiMetas.vaporCavaco}
-          inverse={false}
-        />
+        {customKPIData.map(k => (
+          <TargetCard
+            key={k.id}
+            label={k.label}
+            value={k.averageValue ?? 0}
+            unit={k.unit}
+            color={k.color}
+            icon={Target}
+            meta={k.meta}
+            inverse={k.inverse}
+          />
+        ))}
+        {customKPIData.length === 0 && (
+          <p style={{ fontSize:'var(--text-sm)', color:'var(--text-muted)', padding:'var(--space-md)' }}>
+            Nenhum KPI configurado.
+          </p>
+        )}
       </div>
-
-
 
       {/* ═══════════════════════════════════════════════
           SEÇÃO 2b — GRÁFICOS POR KPI (Meta vs. Real)
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Evolução dos Indicadores por Relatório — Meta vs. Real</div>
       <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-lg)', marginBottom:'var(--space-xl)' }}>
-
-        {/* KPI 1 — kW Gerado / ton Vapor (MW×1000) */}
-        <KPIChart
-          title="kW Gerado / ton Vapor Produzido"
-          unit="kW/ton"
-          color="#f97316"
-          data={kpiSeries.kwhGer.map(d => ({ ...d, meta: kpiMetas.kwhGer }))}
-          metaVal={kpiMetas.kwhGer}
-          onMetaChange={v => updateDashboardConfig('kpiMetas', 'kwhGer', v)}
+        {customKPIData.map(k => (
+          <KPIChart
+            key={k.id}
+            title={k.label}
+            unit={k.unit}
+            color={k.color}
+            data={k.series.map(d => ({ ...d, meta: k.meta }))}
+            metaVal={k.meta}
+            onMetaChange={v => updateKPIMeta(k.id, v)}
+            emptyMsg={`Lance relatórios com as variáveis atreladas a este indicador para visualizar a evolução matemática.`}
+          />
+        ))}
+      </div>hange={v => updateDashboardConfig('kpiMetas', 'kwhGer', v)}
           emptyMsg="Lance relatórios com dados de Energia Gerada (MW) e Vazão de Vapor (ton) para visualizar."
         />
 
