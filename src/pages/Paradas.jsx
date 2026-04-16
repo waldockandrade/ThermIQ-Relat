@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAppData } from '../context/AppDataContext'
+import { useAuth } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, X, Check, Clock } from 'lucide-react'
 
 const TIPOS = [
@@ -35,6 +36,7 @@ const EMPTY = { data: today(), inicio: nowTime(), fim: '', tipo: 'Programada', d
 
 export default function Paradas() {
   const { downtimes, addDowntime, updateDowntime, deleteDowntime } = useAppData()
+  const { isAdmin } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [form, setForm]           = useState(EMPTY)
   const [editId, setEditId]       = useState(null)
@@ -105,10 +107,12 @@ export default function Paradas() {
                   <td><span className={`badge ${TIPO_COLORS[dt.tipo] || 'badge-muted'}`}>{dt.tipo}</span></td>
                   <td style={{ maxWidth:240, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{dt.descricao}</td>
                   <td>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <button className="btn btn-sm btn-ghost btn-icon" onClick={() => openEdit(dt)}><Pencil size={13}/></button>
-                      <button className="btn btn-sm btn-danger btn-icon" onClick={() => handleDeleteRequest(dt.id)}><Trash2 size={13}/></button>
-                    </div>
+                    {isAdmin() && (
+                      <div style={{ display:'flex', gap:6 }}>
+                        <button className="btn btn-sm btn-ghost btn-icon" onClick={() => openEdit(dt)}><Pencil size={13}/></button>
+                        <button className="btn btn-sm btn-danger btn-icon" onClick={() => handleDeleteRequest(dt.id)}><Trash2 size={13}/></button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

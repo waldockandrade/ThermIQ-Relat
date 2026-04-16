@@ -866,6 +866,7 @@ const tipoColor = { 'Corretiva': '#ef4444', 'Preventiva': '#f97316', 'Operaciona
 ═══════════════════════════════════════════════════════ */
 export default function BancoRelatorios() {
   const { reports, downtimes, maintenances, deleteReport, updateReport, getAllVariables } = useAppData()
+  const { isAdmin } = useAuth()
   const allVars = getAllVariables()
   const [viewing, setViewing] = useState(null)
   const [editing, setEditing] = useState(null)   // report being edited
@@ -975,15 +976,19 @@ export default function BancoRelatorios() {
                           onClick={() => setViewing(rep)}>
                           <Eye size={13} />
                         </button>
-                        <button className="btn btn-sm btn-ghost btn-icon" title="Editar lançamentos"
-                          onClick={() => handleEdit(rep)}
-                          style={{ color:'var(--accent)' }}>
-                          <Pencil size={13} />
-                        </button>
-                        <button className="btn btn-sm btn-danger btn-icon" title="Excluir relatório"
-                          onClick={() => setConfirmDel(rep.id)}>
-                          <Trash2 size={13} />
-                        </button>
+                        {isAdmin() && (
+                          <>
+                            <button className="btn btn-sm btn-ghost btn-icon" title="Editar lançamentos"
+                              onClick={() => handleEdit(rep)}
+                              style={{ color:'var(--accent)' }}>
+                              <Pencil size={13} />
+                            </button>
+                            <button className="btn btn-sm btn-danger btn-icon" title="Excluir relatório"
+                              onClick={() => setConfirmDel(rep.id)}>
+                              <Trash2 size={13} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

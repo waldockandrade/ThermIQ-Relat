@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAppData } from '../context/AppDataContext'
+import { useAuth } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, X, Check, Wrench } from 'lucide-react'
 
 const TURNOS     = ['Turno A', 'Turno B', 'Turno C', 'Turno D'] // B-06: Turno D adicionado para consistência com NovoRelatorio
@@ -18,6 +19,7 @@ const EMPTY = { data: today(), turno: 'Turno A', nome: '', numNota: '', descrica
 
 export default function Manutencao() {
   const { maintenances, addMaintenance, updateMaintenance, deleteMaintenance } = useAppData()
+  const { isAdmin } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [form, setForm]           = useState(EMPTY)
   const [editId, setEditId]       = useState(null)
@@ -86,10 +88,12 @@ export default function Manutencao() {
                   <td><span className="badge badge-muted">{m.centro}</span></td>
                   <td><span className={`badge ${PRIOR_COLORS[m.prioridade] || 'badge-muted'}`}>{m.prioridade}</span></td>
                   <td>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <button className="btn btn-sm btn-ghost btn-icon" onClick={() => openEdit(m)}><Pencil size={13}/></button>
-                      <button className="btn btn-sm btn-danger btn-icon" onClick={() => handleDeleteRequest(m.id)}><Trash2 size={13}/></button>
-                    </div>
+                    {isAdmin() && (
+                      <div style={{ display:'flex', gap:6 }}>
+                        <button className="btn btn-sm btn-ghost btn-icon" onClick={() => openEdit(m)}><Pencil size={13}/></button>
+                        <button className="btn btn-sm btn-danger btn-icon" onClick={() => handleDeleteRequest(m.id)}><Trash2 size={13}/></button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
