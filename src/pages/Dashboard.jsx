@@ -780,32 +780,6 @@ export default function Dashboard() {
             emptyMsg={`Lance relatórios com as variáveis atreladas a este indicador para visualizar a evolução matemática.`}
           />
         ))}
-      </div>hange={v => updateDashboardConfig('kpiMetas', 'kwhGer', v)}
-          emptyMsg="Lance relatórios com dados de Energia Gerada (MW) e Vazão de Vapor (ton) para visualizar."
-        />
-
-        {/* KPI 2 — kWh Consumido / ton Vapor */}
-        <KPIChart
-          title="kWh Consumido / ton Vapor Produzido"
-          unit="kWh/ton"
-          color="#a855f7"
-          data={kpiSeries.kwhCon.map(d => ({ ...d, meta: kpiMetas.kwhCon }))}
-          metaVal={kpiMetas.kwhCon}
-          onMetaChange={v => updateDashboardConfig('kpiMetas', 'kwhCon', v)}
-          emptyMsg="Lance relatórios com dados de Energia Consumida (kWh) e Vazão de Vapor (ton) para visualizar."
-        />
-
-        {/* KPI 3 — kg Vapor / m³ Cavaco (ton×1000) */}
-        <KPIChart
-          title="kg Vapor Produzido / m³ Cavaco Consumido"
-          unit="kg/m³"
-          color="#22c55e"
-          data={kpiSeries.vapCavaco.map(d => ({ ...d, meta: kpiMetas.vaporCavaco }))}
-          metaVal={kpiMetas.vaporCavaco}
-          onMetaChange={v => updateDashboardConfig('kpiMetas', 'vaporCavaco', v)}
-          emptyMsg="Lance relatórios com dados de Vazão de Vapor (ton) e Consumo de Cavaco (m³) para visualizar."
-        />
-
       </div>
 
       {/* ═══════════════════════════════════════════════
