@@ -1,3 +1,9 @@
 {
-  "name": "thermiq-relat"
+  "name": "thermiq-relat",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

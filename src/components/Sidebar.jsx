@@ -29,13 +29,14 @@ const NAV_ITEMS = [
   { path: '/usuarios',    label: 'Gestão de Usuários',    icon: Users,           adminOnly: true  },
 ]
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const navigate   = useNavigate()
   const location   = useLocation()
   const { user, logout, isAdmin } = useAuth()
 
   function handleNav(path) {
     navigate(path)
+    if (onMobileClose) onMobileClose()
   }
 
   function handleLogout() {
@@ -46,7 +47,9 @@ export default function Sidebar({ collapsed, onToggle }) {
   const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin())
 
   return (
-    <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
+    <>
+      <div className={`sidebar-overlay${mobileOpen ? ' show' : ''}`} onClick={onMobileClose} />
+      <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
       {/* Logo */}
       <div className="sidebar-logo">
         {/* Flame + Leaf logo */}
@@ -121,5 +124,6 @@ export default function Sidebar({ collapsed, onToggle }) {
         {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
     </aside>
+    </>
   )
 }

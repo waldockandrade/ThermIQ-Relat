@@ -746,7 +746,7 @@ export default function Dashboard() {
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Indicadores de Eficiência — Status das Metas</div>
       {/* TargetCards dos KPIs */}
-      <div className="gauges-grid" style={{ gridTemplateColumns:'repeat(3, 1fr)', marginBottom:'var(--space-lg)' }}>
+      <div className="grid-3" style={{ marginBottom:'var(--space-lg)' }}>
         <TargetCard
           label="kW Gerado / ton Vapor"
           value={kpis.kwhPorVapor ?? 0}

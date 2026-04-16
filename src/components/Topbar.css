@@ -80,3 +80,33 @@
   color: var(--accent);
   border-color: rgba(249, 115, 22, 0.3);
 }
+
+.topbar-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px;
+}
+.topbar-menu-btn:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    left: 0;
+    padding: 0 var(--space-md);
+  }
+  .topbar-menu-btn {
+    display: flex;
+  }
+  .topbar-title {
+    font-size: var(--text-md);
+  }
+  .topbar-date span {
+    display: none; /* remove o texto da data no celular, mantém só icone caso falte espaço ou nem isso */
+  }
+}

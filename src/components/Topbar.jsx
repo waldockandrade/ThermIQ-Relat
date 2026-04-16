@@ -1,6 +1,6 @@
 import React from 'react'
 import { useLocation } from 'react-router-dom'
-import { Bell, Search, Calendar } from 'lucide-react'
+import { Bell, Search, Calendar, Menu } from 'lucide-react'
 import './Topbar.css'
 
 const ROUTE_LABELS = {
@@ -20,13 +20,16 @@ function nowLabel() {
   })
 }
 
-export default function Topbar() {
+export default function Topbar({ onMobileToggle }) {
   const location = useLocation()
   const route    = ROUTE_LABELS[location.pathname] || { label: 'ThermIQ Relat', sub: '' }
 
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <button className="topbar-menu-btn" onClick={onMobileToggle} title="Menu">
+          <Menu size={20} />
+        </button>
         <span className="topbar-sub">{route.sub}</span>
         <h1 className="topbar-title">{route.label}</h1>
       </div>

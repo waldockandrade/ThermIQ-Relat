@@ -27,12 +27,18 @@ function ProtectedRoute({ children }) {
 
 function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
     <div className="app-layout">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
+      <Sidebar 
+        collapsed={collapsed} 
+        onToggle={() => setCollapsed(v => !v)} 
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
       <div className={`app-main${collapsed ? ' sidebar-collapsed' : ''}`}>
-        <Topbar />
+        <Topbar onMobileToggle={() => setMobileOpen(v => !v)} />
         <main className="page-content">
           <Routes>
             <Route path="/"                      element={<Navigate to="/variaveis" replace />} />
