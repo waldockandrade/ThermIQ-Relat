@@ -28,43 +28,74 @@ export function AuthProvider({ children }) {
       }
 
       // 2. Fetch users database from Supabase
-      const { data } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
-      let storedUsers = data?.data
-      
-      let shouldSeed = !storedUsers || !Array.isArray(storedUsers) || storedUsers.length === 0
-
-      if (shouldSeed) {
-        const seeded = await Promise.all(
-          DEFAULT_USERS_PLAIN.map(async u => ({
-            ...u,
-            password: await hashPassword(u.password),
-          }))
-        )
-        // Seed the DB in Supabase
-        await supabase.from('app_data').upsert({ id: 'thermiq_users', data: seeded })
+      if (!supabase) {
+        console.warn("AuthContext: Supabase não inicializado. Verifique VITE_SUPABASE keys.")
+        setLoading(false)
+        return
       }
-      setLoading(false)
+
+      try {
+        const { data, error } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
+        
+        if (error && error.code !== 'PGRST116') {
+           console.error("AuthContext Init Error:", error.message)
+        }
+
+        let storedUsers = data?.data
+        
+        let shouldSeed = !storedUsers || !Array.isArray(storedUsers) || storedUsers.length === 0
+
+        if (shouldSeed) {
+          console.log("AuthContext: Semeando usuários padrão no banco...")
+          const seeded = await Promise.all(
+            DEFAULT_USERS_PLAIN.map(async u => ({
+              ...u,
+              password: await hashPassword(u.password),
+            }))
+          )
+          await supabase.from('app_data').upsert({ id: 'thermiq_users', data: seeded })
+        }
+      } catch (err) {
+        console.error("AuthContext Critical Init Error:", err)
+      } finally {
+        setLoading(false)
+      }
     }
     init()
   }, [])
 
   async function login(email, password) {
+    if (!supabase) return { ok: false, error: 'Banco de dados inacessível. Verifique chaves VITE.' }
+
     // Busca banco de usuários atualizado do Supabase
-    const { data } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
+    const { data, error } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
+    if (error) {
+       console.error("Erro ao buscar usuários para login:", error)
+       return { ok: false, error: 'Erro de conexão com o banco de dados.' }
+    }
+
     const users = data?.data || []
-    
     const hashed = await hashPassword(password)
     const cleanEmail = email.trim().toLowerCase()
+    
+    // DEBUG LOGS (Visualizar no F12 do navegador)
+    console.log("--- DIAGNÓSTICO DE LOGIN ---")
+    console.log("Email tentado:", cleanEmail)
+    console.log("Hash gerado (local):", hashed)
     
     const found = users.find(
       u => u.email.trim().toLowerCase() === cleanEmail && u.password === hashed
     )
+
     if (found) {
+      console.log("Login autorizado para:", found.name)
       const { password: _p, ...safe } = found
       setUser(safe)
       localStorage.setItem('thermiq_session', JSON.stringify(safe))
       return { ok: true }
     }
+
+    console.warn("Login falhou. Verifique se o e-mail ou senha estão corretos.")
     return { ok: false, error: 'E-mail ou senha inválidos.' }
   }
 

@@ -133,23 +133,53 @@ export function AppDataProvider({ children }) {
 
   // Auto-save mechanisms with Supabase (run on state change)
   useEffect(() => { 
-    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_categories', data: categories }).then()
+    async function sync() {
+      if (isLoaded && supabase) {
+        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_categories', data: categories })
+        if (error) console.error("Erro ao sincronizar categorias:", error.message)
+      }
+    }
+    sync()
   }, [categories, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_reports', data: reports }).then()
+    async function sync() {
+      if (isLoaded && supabase) {
+        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_reports', data: reports })
+        if (error) console.error("Erro ao sincronizar relatórios:", error.message)
+      }
+    }
+    sync()
   }, [reports, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_downtimes', data: downtimes }).then()
+    async function sync() {
+      if (isLoaded && supabase) {
+        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_downtimes', data: downtimes })
+        if (error) console.error("Erro ao sincronizar paradas:", error.message)
+      }
+    }
+    sync()
   }, [downtimes, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_maintenances', data: maintenances }).then()
+    async function sync() {
+      if (isLoaded && supabase) {
+        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_maintenances', data: maintenances })
+        if (error) console.error("Erro ao sincronizar manutenções:", error.message)
+      }
+    }
+    sync()
   }, [maintenances, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_dashboard_config', data: dashboardConfig }).then()
+    async function sync() {
+      if (isLoaded && supabase) {
+        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_dashboard_config', data: dashboardConfig })
+        if (error) console.error("Erro ao sincronizar config do painel:", error.message)
+      }
+    }
+    sync()
   }, [dashboardConfig, isLoaded])
 
   /* ---- CATEGORIES / VARIABLES ---- */
