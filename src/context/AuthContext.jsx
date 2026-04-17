@@ -54,8 +54,10 @@ export function AuthProvider({ children }) {
     const users = data?.data || []
     
     const hashed = await hashPassword(password)
+    const cleanEmail = email.trim().toLowerCase()
+    
     const found = users.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === hashed
+      u => u.email.trim().toLowerCase() === cleanEmail && u.password === hashed
     )
     if (found) {
       const { password: _p, ...safe } = found
