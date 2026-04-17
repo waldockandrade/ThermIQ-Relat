@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js'
+
 let client = null
 
 const rawUrl = import.meta.env.VITE_SUPABASE_URL
