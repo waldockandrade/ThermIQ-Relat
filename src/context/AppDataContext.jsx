@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const AppDataContext = createContext(null)
 
@@ -43,17 +44,6 @@ const DEFAULT_CATEGORIES = [
   },
 ]
 
-function load(key, fallback) {
-  try {
-    const stored = localStorage.getItem(key)
-    return stored ? JSON.parse(stored) : fallback
-  } catch { return fallback }
-}
-
-function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
 /* ---- Default Dashboard Config ---- */
 const DEFAULT_DASHBOARD_CONFIG = {
   customQuantitatives: [
@@ -72,43 +62,90 @@ const DEFAULT_DASHBOARD_CONFIG = {
 }
 
 export function AppDataProvider({ children }) {
-  const [categories, setCategories]   = useState(() => load('thermiq_categories', DEFAULT_CATEGORIES))
-  const [reports, setReports]         = useState(() => load('thermiq_reports', []))
-  const [downtimes, setDowntimes]     = useState(() => load('thermiq_downtimes', []))
-  const [maintenances, setMaintenances] = useState(() => load('thermiq_maintenances', []))
-  const [dashboardConfig, setDashboardConfig] = useState(() => {
-    const stored = load('thermiq_dashboard_config', null)
-    
-    // Migração de estado dos Dashboards antigos baseados em dict "quantMaxes" e "kpiMetas"
-    if (stored && !stored.customQuantitatives) {
-       stored.customQuantitatives = [
-         { id: 'q-1', varId: 'v-7', label: 'Água de Alimentação', max: stored.quantMaxes?.agua || 5000, color: '#3b82f6', iconName: 'Droplets', factor: 1, unitOverride: 'ton' },
-         { id: 'q-2', varId: 'v-6', label: 'Vapor Gerado', max: stored.quantMaxes?.vapor || 2000, color: '#22c55e', iconName: 'Wind', factor: 1, unitOverride: 'ton' },
-         { id: 'q-3', varId: 'v-9', label: 'Energia Gerada', max: stored.quantMaxes?.energiaGerada || 50000, color: '#f97316', iconName: 'Zap', factor: 1000, unitOverride: 'kW' },
-         { id: 'q-4', varId: 'v-10', label: 'Energia Consumida', max: stored.quantMaxes?.energiaConsumida || 20000, color: '#a855f7', iconName: 'Activity', factor: 1, unitOverride: 'kWh' },
-         { id: 'q-5', varId: 'v-8', label: 'Combustível (Cavaco)', max: stored.quantMaxes?.combustivel || 3000, color: '#eab308', iconName: 'Flame', factor: 1, unitOverride: 'm³' }
-       ]
-    }
-    if (stored && !stored.customKPIs) {
-       stored.customKPIs = [
-         { id: 'k-1', label: 'kW Gerado / ton Vapor', numVarId: 'v-9', numFactor: 1000, denVarId: 'v-6', denFactor: 1, unit: 'kW/ton', meta: stored.kpiMetas?.kwhGer || null, inverse: false, color: '#f97316' },
-         { id: 'k-2', label: 'kWh Consumido / ton Vapor', numVarId: 'v-10', numFactor: 1, denVarId: 'v-6', denFactor: 1, unit: 'kWh/ton', meta: stored.kpiMetas?.kwhCon || null, inverse: true, color: '#a855f7' },
-         { id: 'k-3', label: 'kg Vapor / m³ Cavaco', numVarId: 'v-6', numFactor: 1000, denVarId: 'v-8', denFactor: 1, unit: 'kg/m³', meta: stored.kpiMetas?.vaporCavaco || null, inverse: false, color: '#22c55e' }
-       ]
-    }
+  const [categories, setCategories]   = useState(DEFAULT_CATEGORIES)
+  const [reports, setReports]         = useState([])
+  const [downtimes, setDowntimes]     = useState([])
+  const [maintenances, setMaintenances] = useState([])
+  const [dashboardConfig, setDashboardConfig] = useState(DEFAULT_DASHBOARD_CONFIG)
 
-    return {
-      customQuantitatives: stored?.customQuantitatives || DEFAULT_DASHBOARD_CONFIG.customQuantitatives,
-      customKPIs:          stored?.customKPIs || DEFAULT_DASHBOARD_CONFIG.customKPIs,
-      qualMetas:           { ...DEFAULT_DASHBOARD_CONFIG.qualMetas, ...stored?.qualMetas }
-    }
-  })
+  const [isLoaded, setIsLoaded] = useState(false)
 
-  useEffect(() => { save('thermiq_categories',       categories)      }, [categories])
-  useEffect(() => { save('thermiq_reports',          reports)         }, [reports])
-  useEffect(() => { save('thermiq_downtimes',        downtimes)       }, [downtimes])
-  useEffect(() => { save('thermiq_maintenances',     maintenances)    }, [maintenances])
-  useEffect(() => { save('thermiq_dashboard_config', dashboardConfig) }, [dashboardConfig])
+  // Initialization: Fetch from Supabase
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data, error } = await supabase.from('app_data').select('*')
+        if (error) {
+          console.error("Erro ao buscar dados do Supabase:", error.message)
+          setIsLoaded(true)
+          return
+        }
+
+        const dict = {}
+        if (data) {
+          data.forEach(row => { dict[row.id] = row.data })
+        }
+
+        if (dict['thermiq_categories']) setCategories(dict['thermiq_categories'])
+        if (dict['thermiq_reports']) setReports(dict['thermiq_reports'])
+        if (dict['thermiq_downtimes']) setDowntimes(dict['thermiq_downtimes'])
+        if (dict['thermiq_maintenances']) setMaintenances(dict['thermiq_maintenances'])
+
+        let storedDash = dict['thermiq_dashboard_config']
+        
+        if (storedDash) {
+          if (!storedDash.customQuantitatives) {
+             storedDash.customQuantitatives = [
+               { id: 'q-1', varId: 'v-7', label: 'Água de Alimentação', max: storedDash.quantMaxes?.agua || 5000, color: '#3b82f6', iconName: 'Droplets', factor: 1, unitOverride: 'ton' },
+               { id: 'q-2', varId: 'v-6', label: 'Vapor Gerado', max: storedDash.quantMaxes?.vapor || 2000, color: '#22c55e', iconName: 'Wind', factor: 1, unitOverride: 'ton' },
+               { id: 'q-3', varId: 'v-9', label: 'Energia Gerada', max: storedDash.quantMaxes?.energiaGerada || 50000, color: '#f97316', iconName: 'Zap', factor: 1000, unitOverride: 'kW' },
+               { id: 'q-4', varId: 'v-10', label: 'Energia Consumida', max: storedDash.quantMaxes?.energiaConsumida || 20000, color: '#a855f7', iconName: 'Activity', factor: 1, unitOverride: 'kWh' },
+               { id: 'q-5', varId: 'v-8', label: 'Combustível (Cavaco)', max: storedDash.quantMaxes?.combustivel || 3000, color: '#eab308', iconName: 'Flame', factor: 1, unitOverride: 'm³' }
+             ]
+          }
+          if (!storedDash.customKPIs) {
+             storedDash.customKPIs = [
+               { id: 'k-1', label: 'kW Gerado / ton Vapor', numVarId: 'v-9', numFactor: 1000, denVarId: 'v-6', denFactor: 1, unit: 'kW/ton', meta: storedDash.kpiMetas?.kwhGer || null, inverse: false, color: '#f97316' },
+               { id: 'k-2', label: 'kWh Consumido / ton Vapor', numVarId: 'v-10', numFactor: 1, denVarId: 'v-6', denFactor: 1, unit: 'kWh/ton', meta: storedDash.kpiMetas?.kwhCon || null, inverse: true, color: '#a855f7' },
+               { id: 'k-3', label: 'kg Vapor / m³ Cavaco', numVarId: 'v-6', numFactor: 1000, denVarId: 'v-8', denFactor: 1, unit: 'kg/m³', meta: storedDash.kpiMetas?.vaporCavaco || null, inverse: false, color: '#22c55e' }
+             ]
+          }
+          setDashboardConfig({
+            ...storedDash,
+            customQuantitatives: storedDash.customQuantitatives,
+            customKPIs:          storedDash.customKPIs,
+            qualMetas:           { ...DEFAULT_DASHBOARD_CONFIG.qualMetas, ...storedDash.qualMetas }
+          })
+        }
+      } catch (e) {
+        console.error("Critical error connecting to Supabase:", e)
+      } finally {
+        setIsLoaded(true)
+      }
+    }
+    loadData()
+  }, [])
+
+  // Auto-save mechanisms with Supabase (run on state change)
+  useEffect(() => { 
+    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_categories', data: categories }).then()
+  }, [categories, isLoaded])
+
+  useEffect(() => { 
+    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_reports', data: reports }).then()
+  }, [reports, isLoaded])
+
+  useEffect(() => { 
+    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_downtimes', data: downtimes }).then()
+  }, [downtimes, isLoaded])
+
+  useEffect(() => { 
+    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_maintenances', data: maintenances }).then()
+  }, [maintenances, isLoaded])
+
+  useEffect(() => { 
+    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_dashboard_config', data: dashboardConfig }).then()
+  }, [dashboardConfig, isLoaded])
 
   /* ---- CATEGORIES / VARIABLES ---- */
   function addCategory(name) {
@@ -235,7 +272,12 @@ export function AppDataProvider({ children }) {
       addMaintenance, updateMaintenance, deleteMaintenance,
       updateDashboardConfig,
     }}>
-      {children}
+      {!isLoaded ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column' }}>
+           <h2 style={{ marginBottom: '16px'}}>Conectando ao banco de dados...</h2>
+           <p style={{ opacity: 0.7 }}>Aguarde enquanto sincronizamos as informações.</p>
+        </div>
+      ) : children}
     </AppDataContext.Provider>
   )
 }

@@ -1,2 +1,8 @@
 node_modules
 .vercel
+dist
+dist-ssr
+*.local
+.env
+.env.*
+!.env.example

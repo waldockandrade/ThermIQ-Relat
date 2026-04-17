@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
 /* ── SHA-256 via WebCrypto API ── */
-async function hashPassword(plain) {
+export async function hashPassword(plain) {
   const enc = new TextEncoder()
   const buf = await crypto.subtle.digest('SHA-256', enc.encode(plain))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('')
@@ -20,20 +21,17 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     async function init() {
-      // Seed default users with hashed passwords if not present
-      let stored = localStorage.getItem('thermiq_users')
-      let shouldSeed = !stored
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          // Check if any user has a non-hashed password (SHA-256 hash is 64 characters)
-          if (parsed.some(u => u.password && u.password.length < 60)) {
-            shouldSeed = true
-          }
-        } catch (e) {
-          shouldSeed = true
-        }
+      // 1. Restore session from localStorage (session only, not the database)
+      const session = localStorage.getItem('thermiq_session')
+      if (session) {
+        try { setUser(JSON.parse(session)) } catch { /* ignore */ }
       }
+
+      // 2. Fetch users database from Supabase
+      const { data } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
+      let storedUsers = data?.data
+      
+      let shouldSeed = !storedUsers || !Array.isArray(storedUsers) || storedUsers.length === 0
 
       if (shouldSeed) {
         const seeded = await Promise.all(
@@ -42,12 +40,8 @@ export function AuthProvider({ children }) {
             password: await hashPassword(u.password),
           }))
         )
-        localStorage.setItem('thermiq_users', JSON.stringify(seeded))
-      }
-      // Restore session
-      const session = localStorage.getItem('thermiq_session')
-      if (session) {
-        try { setUser(JSON.parse(session)) } catch { /* ignore */ }
+        // Seed the DB in Supabase
+        await supabase.from('app_data').upsert({ id: 'thermiq_users', data: seeded })
       }
       setLoading(false)
     }
@@ -55,7 +49,10 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function login(email, password) {
-    const users = JSON.parse(localStorage.getItem('thermiq_users') || '[]')
+    // Busca banco de usuários atualizado do Supabase
+    const { data } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
+    const users = data?.data || []
+    
     const hashed = await hashPassword(password)
     const found = users.find(
       u => u.email.toLowerCase() === email.toLowerCase() && u.password === hashed
