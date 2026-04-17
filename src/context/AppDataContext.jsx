@@ -310,19 +310,19 @@ export function AppDataProvider({ children }) {
       {fatalError ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column', padding: '20px' }}>
            <h2 style={{ marginBottom: '16px', color: '#ef4444'}}>Erro de Conexão Crítico!</h2>
-           <p style={{ opacity: 0.9, maxWidth: '500px', textAlign: 'center', lineHeight: '1.5' }}>
-             O aplicativo não detectou as chaves de acesso ao banco de dados Supabase.<br/><br/>
-             Se você está executando na Vercel, certifique-se de preencher as variáveis <br/><br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_URL</b><br/> e <br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_ANON_KEY</b><br/><br/> lá no menu "Settings -> Environment Variables" da Vercel e depois não se esqueça de clicar em "Redeploy".
-           </p>
-           <div style={{marginTop: '30px', padding: '15px', background: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px', maxWidth: '500px', width: '100%'}}>
-              <p style={{fontSize: '13px', color: '#a1a1aa', marginBottom: '8px'}}>Debug do Vercel:</p>
-              <p style={{fontSize: '12px', wordBreak: 'break-all', color: '#fbbf24', margin: '4px 0'}}>
-                URLLida: {String(import.meta.env.VITE_SUPABASE_URL)}
-              </p>
-              <p style={{fontSize: '12px', wordBreak: 'break-all', color: '#fbbf24', margin: '4px 0'}}>
-                KeyLida: {String(import.meta.env.VITE_SUPABASE_ANON_KEY).substring(0, 5)}...
-              </p>
-           </div>
+            <p style={{ opacity: 0.9, maxWidth: '500px', textAlign: 'center', lineHeight: '1.5' }}>
+              O aplicativo não detectou as chaves de acesso ao banco de dados Supabase.<br/><br/>
+              Se você está executando na Vercel, certifique-se de preencher as variáveis <br/><br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_URL</b><br/> e <br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_ANON_KEY</b><br/><br/> lá no menu "Settings - Environment Variables" da Vercel e depois não se esqueça de clicar em "Redeploy".
+            </p>
+            <div style={{marginTop: '30px', padding: '15px', background: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px', maxWidth: '500px', width: '100%'}}>
+               <p style={{fontSize: '13px', color: '#a1a1aa', marginBottom: '8px'}}>Debug do Vercel:</p>
+               <p style={{fontSize: '12px', wordBreak: 'break-all', color: '#fbbf24', margin: '4px 0'}}>
+                 URLLida: {import.meta.env.VITE_SUPABASE_URL || 'não definida'}
+               </p>
+               <p style={{fontSize: '12px', wordBreak: 'break-all', color: '#fbbf24', margin: '4px 0'}}>
+                 KeyLida: {import.meta.env.VITE_SUPABASE_ANON_KEY ? import.meta.env.VITE_SUPABASE_ANON_KEY.substring(0, 10) + '...' : 'não definida'}
+               </p>
+            </div>
         </div>
       ) : !isLoaded ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column' }}>
