@@ -69,10 +69,15 @@ export function AppDataProvider({ children }) {
   const [dashboardConfig, setDashboardConfig] = useState(DEFAULT_DASHBOARD_CONFIG)
 
   const [isLoaded, setIsLoaded] = useState(false)
+  const [fatalError, setFatalError] = useState(false)
 
   // Initialization: Fetch from Supabase
   useEffect(() => {
     async function loadData() {
+      if (!supabase) {
+        setFatalError(true)
+        return
+      }
       try {
         const { data, error } = await supabase.from('app_data').select('*')
         if (error) {
@@ -128,23 +133,23 @@ export function AppDataProvider({ children }) {
 
   // Auto-save mechanisms with Supabase (run on state change)
   useEffect(() => { 
-    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_categories', data: categories }).then()
+    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_categories', data: categories }).then()
   }, [categories, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_reports', data: reports }).then()
+    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_reports', data: reports }).then()
   }, [reports, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_downtimes', data: downtimes }).then()
+    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_downtimes', data: downtimes }).then()
   }, [downtimes, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_maintenances', data: maintenances }).then()
+    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_maintenances', data: maintenances }).then()
   }, [maintenances, isLoaded])
 
   useEffect(() => { 
-    if (isLoaded) supabase.from('app_data').upsert({ id: 'thermiq_dashboard_config', data: dashboardConfig }).then()
+    if (isLoaded && supabase) supabase.from('app_data').upsert({ id: 'thermiq_dashboard_config', data: dashboardConfig }).then()
   }, [dashboardConfig, isLoaded])
 
   /* ---- CATEGORIES / VARIABLES ---- */
@@ -272,7 +277,15 @@ export function AppDataProvider({ children }) {
       addMaintenance, updateMaintenance, deleteMaintenance,
       updateDashboardConfig,
     }}>
-      {!isLoaded ? (
+      {fatalError ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column', padding: '20px' }}>
+           <h2 style={{ marginBottom: '16px', color: '#ef4444'}}>Erro de Conexão Crítico!</h2>
+           <p style={{ opacity: 0.9, maxWidth: '500px', textAlign: 'center', lineHeight: '1.5' }}>
+             O aplicativo não detectou as chaves de acesso ao banco de dados Supabase.<br/><br/>
+             Se você está executando na Vercel, certifique-se de preencher as variáveis <br/><br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_URL</b><br/> e <br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_ANON_KEY</b><br/><br/> lá no menu "Settings -> Environment Variables" da Vercel e depois não se esqueça de clicar em "Redeploy".
+           </p>
+        </div>
+      ) : !isLoaded ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column' }}>
            <h2 style={{ marginBottom: '16px'}}>Conectando ao banco de dados...</h2>
            <p style={{ opacity: 0.7 }}>Aguarde enquanto sincronizamos as informações.</p>
