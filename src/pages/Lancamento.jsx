@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
-import { Save, AlertCircle, Zap, BookOpen } from 'lucide-react'
+import { Save, AlertCircle, Zap, BookOpen, Plus, Trash2 } from 'lucide-react'
 
 const MAX_DIARIO = 3000
 
@@ -61,19 +61,22 @@ export default function Lancamento() {
   const { user, isAdmin }              = useAuth()
   const navigate                       = useNavigate()
 
-  const [draft, setDraft]     = useState(null)
-  const [values, setValues]   = useState({})
-  const [diario, setDiario]   = useState('')
-  const [saved, setSaved]     = useState(false)
-  const [autoFilled, setAutoFilled] = useState(false)
+  const [ draft, setDraft ] = useState(null)
+  const [ values, setValues ] = useState({})
+  const [ diario, setDiario ] = useState('')
+  const [ combustiveis, setCombustiveis ] = useState([{ id: 1, mistura: '', umidade: '' }])
+  const [ saved, setSaved ] = useState(false)
+  const [ autoFilled, setAutoFilled ] = useState(false)
 
   useEffect(() => {
     const raw = sessionStorage.getItem('thermiq_draft_report')
     if (!raw) { navigate('/relatorio/novo'); return }
     const d = JSON.parse(raw)
     setDraft(d)
-    // Preserva diário já salvo no draft se houver
     if (d.diario) setDiario(d.diario)
+    if (d.combustiveis && d.combustiveis.length > 0) {
+      setCombustiveis(d.combustiveis)
+    }
     // Inicializa values
     const init = {}
     d.selectedVarIds.forEach(id => {
@@ -104,6 +107,17 @@ export default function Lancamento() {
         slots: { ...prev[varId]?.slots, [time]: val },
       },
     }))
+  }
+
+  /* ── Helpers de Combustível ── */
+  function addCombustivel() {
+    setCombustiveis(prev => [...prev, { id: Date.now(), mistura: '', umidade: '' }])
+  }
+  function removeCombustivel(id) {
+    setCombustiveis(prev => prev.filter(c => c.id !== id))
+  }
+  function updateCombustivel(id, field, val) {
+    setCombustiveis(prev => prev.map(c => c.id === id ? { ...c, [field]: val } : c))
   }
 
   /* ── Auto-preenchimento (admin) ── */
@@ -139,6 +153,7 @@ export default function Lancamento() {
     const report = {
       ...draft,
       diario,
+      combustiveis,
       lancamentos: values,
       timeSlots,
       savedAt: new Date().toISOString(),
@@ -150,7 +165,7 @@ export default function Lancamento() {
     setTimeout(() => navigate('/banco'), 1200)
   }
 
-  const { turnoInfo, operadores, combustiveis } = draft
+  const { turnoInfo, operadores } = draft
 
   return (
     <div className="fade-in">
@@ -233,14 +248,63 @@ export default function Lancamento() {
       </div>
 
       {/* ── Alerta de campos incompletos ── */}
-      {!isComplete() && (
-        <div style={{ display:'flex', gap:8, alignItems:'center', padding:'10px 14px', background:'var(--warning-glow)', border:'1px solid #fef3c7', borderRadius:'var(--radius-md)', marginBottom:'var(--space-md)', fontSize:'var(--text-sm)', color:'var(--warning)' }}>
-          <AlertCircle size={15}/>
-          {timeSlots.length === 0
-            ? 'Preencha o horário de fim do turno para habilitar o lançamento de dados.'
-            : 'Certifique-se de preencher todos os campos (Iniciais, Finais e Slots) para salvar o relatório.'}
+      {/* ── Seção 2: Diário de Bordo ── */}
+      <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
+        <div className="card-header">
+          <span className="card-title">
+            <BookOpen size={16} />
+            Diário de Bordo
+          </span>
+          <span style={{ fontSize:'var(--text-xs)', color: diario.length >= MAX_DIARIO ? 'var(--danger)' : 'var(--text-muted)' }}>
+            {diario.length} / {MAX_DIARIO}
+          </span>
         </div>
-      )}
+        <textarea
+          id="lancamento-diario"
+          placeholder="Registre aqui as ocorrências relevantes do turno..."
+          value={diario}
+          onChange={e => setDiario(e.target.value.slice(0, MAX_DIARIO))}
+          style={{ minHeight: 120 }}
+        />
+      </div>
+
+      {/* ── Seção 3: Matriz Energética / Combustível ── */}
+      <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
+        <div className="card-header">
+          <span className="card-title">Matriz Energética / Combustível</span>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-md)' }}>
+          {combustiveis.map((c, i) => (
+            <div key={c.id} style={{ display:'flex', gap:'var(--space-sm)', alignItems:'flex-end' }}>
+              <div className="form-group" style={{ flex:1 }}>
+                <label>Mistura Realizada</label>
+                <input
+                  placeholder="Ex: Cavaco 70% + Bagaço 30%"
+                  value={c.mistura}
+                  onChange={e => updateCombustivel(c.id, 'mistura', e.target.value)}
+                />
+              </div>
+              <div className="form-group" style={{ width:140 }}>
+                <label>Umidade (%)</label>
+                <input
+                  type="number" min="0" max="100" step="0.1"
+                  placeholder="0.0"
+                  value={c.umidade}
+                  onChange={e => updateCombustivel(c.id, 'umidade', e.target.value)}
+                />
+              </div>
+              {i > 0 && (
+                <button type="button" className="btn btn-danger btn-sm btn-icon" onClick={() => removeCombustivel(c.id)}>
+                  <Trash2 size={13}/>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop:12 }} onClick={addCombustivel}>
+          <Plus size={14}/> Adicionar combustível
+        </button>
+      </div>
 
       {/* ── Tabela Unificada de Lançamentos (Fiel ao Modelo) ── */}
       <div className="card" style={{ marginBottom:'var(--space-md)', padding: 0, overflow: 'hidden' }}>
@@ -401,28 +465,15 @@ export default function Lancamento() {
         </div>
       </div>
 
-      {/* ── Diário de Bordo ── */}
-      <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
-        <div className="card-header">
-          <span className="card-title">
-            <BookOpen size={16} />
-            Diário de Bordo
-          </span>
-          <span style={{ fontSize:'var(--text-xs)', color: diario.length >= MAX_DIARIO ? 'var(--danger)' : 'var(--text-muted)' }}>
-            {diario.length} / {MAX_DIARIO}
-          </span>
+      {/* Alerta de campos incompletos */}
+      {!isComplete() && (
+        <div style={{ display:'flex', gap:8, alignItems:'center', padding:'10px 14px', background:'var(--warning-glow)', border:'1px solid #fef3c7', borderRadius:'var(--radius-md)', marginBottom:'var(--space-md)', fontSize:'var(--text-sm)', color:'var(--warning)' }}>
+          <AlertCircle size={15}/>
+          {timeSlots.length === 0
+            ? 'Preencha o horário de fim do turno para habilitar o lançamento de dados.'
+            : 'Certifique-se de preencher todos os campos (Iniciais, Finais e Slots) para salvar o relatório.'}
         </div>
-        <textarea
-          id="lancamento-diario"
-          placeholder="Registre aqui as ocorrências relevantes do turno: alterações de processo, manutenções realizadas, eventos operacionais, observações da equipe..."
-          value={diario}
-          onChange={e => setDiario(e.target.value.slice(0, MAX_DIARIO))}
-          style={{ minHeight: 160 }}
-        />
-        <p style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)', marginTop:'var(--space-sm)' }}>
-          O diário de bordo é preenchido ao final do turno e fica registrado junto ao relatório.
-        </p>
-      </div>
+      )}
 
       {/* ── Botão salvar inferior ── */}
       <div style={{ display:'flex', justifyContent:'flex-end', gap:'var(--space-sm)', marginTop:'var(--space-lg)' }}>

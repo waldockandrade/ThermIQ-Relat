@@ -36,10 +36,7 @@ export default function NovoRelatorio() {
     { id: 4, tipo: 'Op. Carregadeira',nome: '' },
   ])
 
-  // Combustível
-  const [combustiveis, setCombustiveis] = useState([
-    { id: 1, mistura: '', umidade: '' }
-  ])
+  // Combustível — movido para a tela de Lançamento
 
   // Diário de bordo — preenchido na tela de Lançamento
 
@@ -71,12 +68,8 @@ export default function NovoRelatorio() {
     setOperadores(prev => prev.filter(o => o.id !== id))
   }
 
-  function addCombustivel() {
-    setCombustiveis(prev => [...prev, { id: Date.now(), mistura: '', umidade: '' }])
-  }
-
-  function removeCombustivel(id) {
-    setCombustiveis(prev => prev.filter(c => c.id !== id))
+  function removeOperador(id) {
+    setOperadores(prev => prev.filter(o => o.id !== id))
   }
 
   function handleSubmit(e) {
@@ -84,7 +77,7 @@ export default function NovoRelatorio() {
     const draft = {
       turnoInfo,
       operadores,
-      combustiveis,
+      combustiveis: [], // Será preenchido na tela de lançamento
       diario: '',
       selectedVarIds: [...selectedVars],
       criadoPor: user?.name,
@@ -177,44 +170,7 @@ export default function NovoRelatorio() {
         </button>
       </div>
 
-      {/* ── Seção 2: Combustível ── */}
-      <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
-        <div className="card-header">
-          <span className="card-title">Matriz Energética / Combustível</span>
-        </div>
-
-        <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-md)' }}>
-          {combustiveis.map((c, i) => (
-            <div key={c.id} style={{ display:'flex', gap:'var(--space-sm)', alignItems:'flex-end' }}>
-              <div className="form-group" style={{ flex:1 }}>
-                <label>Mistura Realizada</label>
-                <input
-                  placeholder="Ex: Cavaco 70% + Bagaço 30%"
-                  value={c.mistura}
-                  onChange={e => setCombustiveis(prev => prev.map(x => x.id === c.id ? { ...x, mistura: e.target.value } : x))}
-                />
-              </div>
-              <div className="form-group" style={{ width:140 }}>
-                <label>Umidade (%)</label>
-                <input
-                  type="number" min="0" max="100" step="0.1"
-                  placeholder="Ex: 35"
-                  value={c.umidade}
-                  onChange={e => setCombustiveis(prev => prev.map(x => x.id === c.id ? { ...x, umidade: e.target.value } : x))}
-                />
-              </div>
-              {i > 0 && (
-                <button type="button" className="btn btn-danger btn-sm btn-icon" onClick={() => removeCombustivel(c.id)}>
-                  <Trash2 size={13}/>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop:12 }} onClick={addCombustivel}>
-          <Plus size={14}/> Adicionar combustível
-        </button>
-      </div>
+      {/* A seção de Combustível foi movida para a tela de Lançamento */}
 
       {/* Diário de Bordo foi movido para a tela de Lançamento */}
 
