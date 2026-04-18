@@ -65,6 +65,8 @@ export default function Lancamento() {
   const [ values, setValues ] = useState({})
   const [ diario, setDiario ] = useState('')
   const [ combustiveis, setCombustiveis ] = useState([{ id: 1, mistura: '', umidade: '' }])
+  const [ localParadas, setLocalParadas ] = useState([])
+  const [ localNotas, setLocalNotas ]     = useState([])
   const [ saved, setSaved ] = useState(false)
   const [ autoFilled, setAutoFilled ] = useState(false)
 
@@ -120,6 +122,28 @@ export default function Lancamento() {
     setCombustiveis(prev => prev.map(c => c.id === id ? { ...c, [field]: val } : c))
   }
 
+  /* ── Helpers de Paradas ── */
+  function addLocalParada() {
+    setLocalParadas(prev => [...prev, { id: Date.now(), inicio: '', fim: '', tipo: 'Programada', descricao: '' }])
+  }
+  function removeLocalParada(id) {
+    setLocalParadas(prev => prev.filter(p => p.id !== id))
+  }
+  function updateLocalParada(id, field, val) {
+    setLocalParadas(prev => prev.map(p => p.id === id ? { ...p, [field]: val } : p))
+  }
+
+  /* ── Helpers de Notas ── */
+  function addLocalNota() {
+    setLocalNotas(prev => [...prev, { id: Date.now(), numNota: '', descricao: '', centro: 'MEC-GER', prioridade: 'Média' }])
+  }
+  function removeLocalNota(id) {
+    setLocalNotas(prev => prev.filter(n => n.id !== id))
+  }
+  function updateLocalNota(id, field, val) {
+    setLocalNotas(prev => prev.map(n => n.id === id ? { ...n, [field]: val } : n))
+  }
+
   /* ── Auto-preenchimento (admin) ── */
   function handleAutoFill() {
     const next = {}
@@ -149,7 +173,27 @@ export default function Lancamento() {
   }
 
   /* ── Salvar ── */
+  const { addDowntime, addMaintenance } = useAppData()
+
   function handleSave() {
+    const reportDate = draft.turnoInfo.data
+    const reportTurno = draft.turnoInfo.turno
+    const solicitante = user?.name || 'Operador'
+
+    // 1. Salvar paradas vinculadas
+    localParadas.forEach(p => {
+      if (p.inicio) {
+        addDowntime({ ...p, data: reportDate, turno: reportTurno })
+      }
+    })
+
+    // 2. Salvar notas vinculadas
+    localNotas.forEach(n => {
+      if (n.descricao) {
+        addMaintenance({ ...n, data: reportDate, turno: reportTurno, nome: solicitante })
+      }
+    })
+
     const report = {
       ...draft,
       diario,
@@ -157,7 +201,7 @@ export default function Lancamento() {
       lancamentos: values,
       timeSlots,
       savedAt: new Date().toISOString(),
-      criadoPor: user?.name,
+      criadoPor: solicitante,
     }
     addReport(report)
     sessionStorage.removeItem('thermiq_draft_report')
@@ -304,6 +348,68 @@ export default function Lancamento() {
         <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop:12 }} onClick={addCombustivel}>
           <Plus size={14}/> Adicionar combustível
         </button>
+      </div>
+
+      <div className="grid-2" style={{ marginBottom:'var(--space-lg)' }}>
+        {/* ── Seção: Paradas de Processo ── */}
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Registro de Paradas</span>
+            <button className="btn btn-ghost btn-xs" onClick={addLocalParada}><Plus size={14}/> Add</button>
+          </div>
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            {localParadas.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>Nenhuma parada registrada.</p>}
+            {localParadas.map((p, idx) => (
+              <div key={p.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <input type="time" value={p.inicio} onChange={e => updateLocalParada(p.id, 'inicio', e.target.value)} style={{ width: 85, fontSize: 12 }} />
+                  <input type="time" value={p.fim} onChange={e => updateLocalParada(p.id, 'fim', e.target.value)} style={{ width: 85, fontSize: 12 }} />
+                  <select value={p.tipo} onChange={e => updateLocalParada(p.id, 'tipo', e.target.value)} style={{ fontSize: 12, flex: 1 }}>
+                    {['Programada', 'Elétrica', 'Mecânica', 'Operacional', 'Processo'].map(t => <option key={t}>{t}</option>)}
+                  </select>
+                  <button className="btn btn-danger btn-sm btn-icon" onClick={() => removeLocalParada(p.id)}><Trash2 size={13}/></button>
+                </div>
+                <input 
+                  placeholder="Descrição da parada..." 
+                  value={p.descricao} 
+                  onChange={e => updateLocalParada(p.id, 'descricao', e.target.value)} 
+                  style={{ fontSize: 12 }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Seção: Notas de Manutenção ── */}
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Notas de Manutenção</span>
+            <button className="btn btn-ghost btn-xs" onClick={addLocalNota}><Plus size={14}/> Add</button>
+          </div>
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            {localNotas.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>Nenhuma nota registrada.</p>}
+            {localNotas.map((n, idx) => (
+              <div key={n.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <input placeholder="Nº Nota" value={n.numNota} onChange={e => updateLocalNota(n.id, 'numNota', e.target.value)} style={{ width: 80, fontSize: 12 }} />
+                  <select value={n.centro} onChange={e => updateLocalNota(n.id, 'centro', e.target.value)} style={{ fontSize: 12, width: 110 }}>
+                    {['MEC-GER', 'ELE-GER', 'CALD-GER', 'MANT-UTL'].map(c => <option key={c}>{c}</option>)}
+                  </select>
+                  <select value={n.prioridade} onChange={e => updateLocalNota(n.id, 'prioridade', e.target.value)} style={{ fontSize: 12, flex: 1 }}>
+                    {['Emergencial', 'Alta', 'Média', 'Baixa'].map(p => <option key={p}>{p}</option>)}
+                  </select>
+                  <button className="btn btn-danger btn-sm btn-icon" onClick={() => removeLocalNota(n.id)}><Trash2 size={13}/></button>
+                </div>
+                <input 
+                  placeholder="Ocorrência técnico/manutenção..." 
+                  value={n.descricao} 
+                  onChange={e => updateLocalNota(n.id, 'descricao', e.target.value)} 
+                  style={{ fontSize: 12 }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ── Tabela Unificada de Lançamentos (Fiel ao Modelo) ── */}
