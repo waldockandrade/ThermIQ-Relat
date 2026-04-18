@@ -242,62 +242,130 @@ export default function Lancamento() {
         </div>
       )}
 
-      {/* ── Tabelas de variáveis ── */}
-      {selVars.map(v => (
-        <div key={v.id} className="card" style={{ marginBottom:'var(--space-md)' }}>
-          <div className="card-header">
-            <span className="card-title" style={{ fontSize:'var(--text-base)' }}>
-              {v.name} <span className="badge badge-muted" style={{ marginLeft:8 }}>{v.unit}</span>
-            </span>
-          </div>
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ background:'var(--bg-surface)', minWidth:140 }}>Tot. Inicial</th>
-                  {timeSlots.map(t => <th key={t} style={{ minWidth:78, textAlign:'center' }}>{t}</th>)}
-                  <th style={{ background:'var(--bg-surface)', minWidth:140 }}>Tot. Final</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
+      {/* ── Tabela Unificada de Lançamentos ── */}
+      <div className="card" style={{ marginBottom:'var(--space-md)', padding: 0, overflow: 'hidden' }}>
+        <div className="table-wrapper" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          <table className="industrial-table" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-card)' }}>
+              <tr>
+                <th style={{ 
+                  background: 'var(--bg-surface)', 
+                  minWidth: 160, 
+                  position: 'sticky', 
+                  left: 0, 
+                  zIndex: 11,
+                  borderBottom: '2px solid var(--border)' 
+                }}>
+                  Horário / Parâmetro
+                </th>
+                {selVars.map(v => (
+                  <th key={v.id} style={{ 
+                    minWidth: 140, 
+                    textAlign: 'center', 
+                    fontWeight: 700, 
+                    color: 'var(--text-primary)',
+                    borderBottom: '2px solid var(--border)'
+                  }}>
+                    {v.name}
+                    <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-muted)', marginTop: 2 }}>
+                      ({v.unit})
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Linha: Totalizador Inicial */}
+              <tr style={{ background: 'var(--bg-surface)' }}>
+                <td style={{ 
+                  fontWeight: 600, 
+                  color: 'var(--text-secondary)', 
+                  position: 'sticky', 
+                  left: 0, 
+                  background: 'var(--bg-surface)',
+                  zIndex: 5,
+                  borderRight: '1px solid var(--border)'
+                }}>
+                  Totalizador inicial
+                </td>
+                {selVars.map(v => (
+                  <td key={v.id} style={{ padding: '8px' }}>
                     <input
                       className="cell-input"
                       type="number"
+                      step="any"
                       value={values[v.id]?.tot_inicial ?? ''}
                       onChange={e => setVal(v.id, 'tot_inicial', e.target.value)}
-                      placeholder="0"
-                      style={{ width:'100%' }}
+                      placeholder="0.00"
+                      style={{ width: '100%', textAlign: 'center', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 2 }}
                     />
                   </td>
-                  {timeSlots.map(t => (
-                    <td key={t} style={{ textAlign:'center' }}>
+                ))}
+              </tr>
+
+              {/* Linhas de Horários */}
+              {timeSlots.map(t => (
+                <tr key={t}>
+                  <td style={{ 
+                    fontWeight: 700, 
+                    color: 'var(--text-muted)', 
+                    fontFamily: 'monospace',
+                    position: 'sticky', 
+                    left: 0, 
+                    background: 'white',
+                    zIndex: 5,
+                    borderRight: '1px solid var(--border)',
+                    fontSize: 13
+                  }}>
+                    {t}
+                  </td>
+                  {selVars.map(v => (
+                    <td key={v.id} style={{ padding: '4px 8px' }}>
                       <input
                         className="cell-input"
                         type="number"
+                        step="any"
                         value={values[v.id]?.slots?.[t] ?? ''}
                         onChange={e => setSlotVal(v.id, t, e.target.value)}
                         placeholder="—"
+                        style={{ width: '100%', textAlign: 'center', padding: '6px' }}
                       />
                     </td>
                   ))}
-                  <td>
+                </tr>
+              ))}
+
+              {/* Linha: Totalizador Final */}
+              <tr style={{ background: 'var(--bg-surface)' }}>
+                <td style={{ 
+                  fontWeight: 600, 
+                  color: 'var(--text-secondary)', 
+                  position: 'sticky', 
+                  left: 0, 
+                  background: 'var(--bg-surface)',
+                  zIndex: 5,
+                  borderRight: '1px solid var(--border)'
+                }}>
+                  Totalizador final
+                </td>
+                {selVars.map(v => (
+                  <td key={v.id} style={{ padding: '8px' }}>
                     <input
                       className="cell-input"
                       type="number"
+                      step="any"
                       value={values[v.id]?.tot_final ?? ''}
                       onChange={e => setVal(v.id, 'tot_final', e.target.value)}
-                      placeholder="0"
-                      style={{ width:'100%' }}
+                      placeholder="0.00"
+                      style={{ width: '100%', textAlign: 'center', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 2 }}
                     />
                   </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         </div>
-      ))}
+      </div>
 
       {/* ── Diário de Bordo ── */}
       <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
