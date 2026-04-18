@@ -6,7 +6,8 @@
 /* --- Google Fonts --- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* --- CSS Variables ---:root {
+/* --- CSS Variables --- */
+:root {
   /* Industrial Stealth V2 — Deep Professional Dark Palette */
   --bg-base:        #050507; /* Deeper midnight background */
   --bg-surface:     #0c0c0e;
