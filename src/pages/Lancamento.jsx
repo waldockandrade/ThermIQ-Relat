@@ -260,12 +260,16 @@ export default function Lancamento() {
                 {selVars.map(v => (
                   <th key={v.id} style={{ 
                     border: '1px solid var(--border)',
-                    padding: '12px 8px',
+                    padding: '8px 4px',
                     textAlign: 'center', 
                     fontWeight: 700, 
                     color: 'var(--text-primary)',
-                    fontSize: 12,
-                    lineHeight: 1.2
+                    fontSize: 11,
+                    lineHeight: 1.2,
+                    minWidth: 100,
+                    maxWidth: 120,
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word'
                   }}>
                     {v.name}<br/>
                     <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{v.unit}</span>
