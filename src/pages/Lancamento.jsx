@@ -242,62 +242,89 @@ export default function Lancamento() {
         </div>
       )}
 
-      {/* ── Tabela Unificada de Lançamentos ── */}
+      {/* ── Tabela Unificada de Lançamentos (Fiel ao Modelo) ── */}
       <div className="card" style={{ marginBottom:'var(--space-md)', padding: 0, overflow: 'hidden' }}>
         <div className="table-wrapper" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          <table className="industrial-table" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', border: '1px solid var(--border)' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-card)' }}>
+              {/* Linha 1: Nomes das Variáveis */}
               <tr>
                 <th style={{ 
-                  background: 'var(--bg-surface)', 
+                  background: 'var(--bg-card)', 
+                  border: '1px solid var(--border)',
                   minWidth: 160, 
                   position: 'sticky', 
                   left: 0, 
-                  zIndex: 11,
-                  borderBottom: '2px solid var(--border)' 
-                }}>
-                  Horário / Parâmetro
-                </th>
+                  zIndex: 11
+                }}></th>
                 {selVars.map(v => (
                   <th key={v.id} style={{ 
-                    minWidth: 140, 
+                    border: '1px solid var(--border)',
+                    padding: '12px 8px',
                     textAlign: 'center', 
                     fontWeight: 700, 
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid var(--border)'
+                    fontSize: 12,
+                    lineHeight: 1.2
                   }}>
-                    {v.name}
-                    <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-muted)', marginTop: 2 }}>
-                      ({v.unit})
-                    </div>
+                    {v.name}<br/>
+                    <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{v.unit}</span>
+                  </th>
+                ))}
+              </tr>
+              {/* Linha 2: Hora / Valor */}
+              <tr>
+                <th style={{ 
+                  background: 'var(--bg-surface)', 
+                  border: '1px solid var(--border)',
+                  textAlign: 'center',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  position: 'sticky', 
+                  left: 0, 
+                  zIndex: 11
+                }}>
+                  Hora
+                </th>
+                {selVars.map(v => (
+                  <th key={`val-${v.id}`} style={{ 
+                    background: 'var(--bg-surface)', 
+                    border: '1px solid var(--border)',
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: 13
+                  }}>
+                    Valor
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {/* Linha: Totalizador Inicial */}
-              <tr style={{ background: 'var(--bg-surface)' }}>
+              <tr>
                 <td style={{ 
                   fontWeight: 600, 
-                  color: 'var(--text-secondary)', 
+                  color: 'var(--text-primary)', 
                   position: 'sticky', 
                   left: 0, 
                   background: 'var(--bg-surface)',
                   zIndex: 5,
-                  borderRight: '1px solid var(--border)'
+                  border: '1px solid var(--border)',
+                  padding: '8px 12px',
+                  whiteSpace: 'nowrap'
                 }}>
-                  Totalizador inicial
+                  Totalizador Inicial:
                 </td>
                 {selVars.map(v => (
-                  <td key={v.id} style={{ padding: '8px' }}>
+                  <td key={v.id} style={{ border: '1px solid var(--border)', padding: '4px 8px' }}>
                     <input
                       className="cell-input"
                       type="number"
                       step="any"
                       value={values[v.id]?.tot_inicial ?? ''}
                       onChange={e => setVal(v.id, 'tot_inicial', e.target.value)}
-                      placeholder="0.00"
-                      style={{ width: '100%', textAlign: 'center', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 2 }}
+                      placeholder=""
+                      style={{ width: '100%', textAlign: 'center', fontWeight: 600, border: 'none', background: 'transparent' }}
                     />
                   </td>
                 ))}
@@ -307,28 +334,29 @@ export default function Lancamento() {
               {timeSlots.map(t => (
                 <tr key={t}>
                   <td style={{ 
-                    fontWeight: 700, 
-                    color: 'var(--text-muted)', 
-                    fontFamily: 'monospace',
+                    fontWeight: 600, 
+                    color: 'var(--text-primary)', 
+                    textAlign: 'center',
                     position: 'sticky', 
                     left: 0, 
                     background: 'white',
                     zIndex: 5,
-                    borderRight: '1px solid var(--border)',
+                    border: '1px solid var(--border)',
+                    padding: '4px 12px',
                     fontSize: 13
                   }}>
                     {t}
                   </td>
                   {selVars.map(v => (
-                    <td key={v.id} style={{ padding: '4px 8px' }}>
+                    <td key={v.id} style={{ border: '1px solid var(--border)', padding: '0 8px' }}>
                       <input
                         className="cell-input"
                         type="number"
                         step="any"
                         value={values[v.id]?.slots?.[t] ?? ''}
                         onChange={e => setSlotVal(v.id, t, e.target.value)}
-                        placeholder="—"
-                        style={{ width: '100%', textAlign: 'center', padding: '6px' }}
+                        placeholder=""
+                        style={{ width: '100%', textAlign: 'center', border: 'none', background: 'transparent', padding: '6px' }}
                       />
                     </td>
                   ))}
@@ -336,28 +364,30 @@ export default function Lancamento() {
               ))}
 
               {/* Linha: Totalizador Final */}
-              <tr style={{ background: 'var(--bg-surface)' }}>
+              <tr>
                 <td style={{ 
                   fontWeight: 600, 
-                  color: 'var(--text-secondary)', 
+                  color: 'var(--text-primary)', 
                   position: 'sticky', 
                   left: 0, 
                   background: 'var(--bg-surface)',
                   zIndex: 5,
-                  borderRight: '1px solid var(--border)'
+                  border: '1px solid var(--border)',
+                  padding: '8px 12px',
+                  whiteSpace: 'nowrap'
                 }}>
-                  Totalizador final
+                  Totalizador Final:
                 </td>
                 {selVars.map(v => (
-                  <td key={v.id} style={{ padding: '8px' }}>
+                  <td key={v.id} style={{ border: '1px solid var(--border)', padding: '4px 8px' }}>
                     <input
                       className="cell-input"
                       type="number"
                       step="any"
                       value={values[v.id]?.tot_final ?? ''}
                       onChange={e => setVal(v.id, 'tot_final', e.target.value)}
-                      placeholder="0.00"
-                      style={{ width: '100%', textAlign: 'center', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 2 }}
+                      placeholder=""
+                      style={{ width: '100%', textAlign: 'center', fontWeight: 600, border: 'none', background: 'transparent' }}
                     />
                   </td>
                 ))}
