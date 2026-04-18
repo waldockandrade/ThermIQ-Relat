@@ -113,7 +113,7 @@ export default function NovoRelatorio() {
       {/* ── Seção 1: Informações de Turno ── */}
       <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
         <div className="card-header">
-          <span className="card-title">📋 Informações de Turno</span>
+          <span className="card-title">Configuração de Turno</span>
         </div>
 
         <div className="form-row" style={{ marginBottom:'var(--space-md)' }}>
@@ -180,7 +180,7 @@ export default function NovoRelatorio() {
       {/* ── Seção 2: Combustível ── */}
       <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
         <div className="card-header">
-          <span className="card-title">🔥 Informações de Combustível</span>
+          <span className="card-title">Matriz Energética / Combustível</span>
         </div>
 
         <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-md)' }}>
@@ -221,7 +221,7 @@ export default function NovoRelatorio() {
       {/* ── Seção 4: Variáveis ── */}
       <div className="card">
         <div className="card-header">
-          <span className="card-title">📊 Variáveis de Processo</span>
+          <span className="card-title">Parâmetros de Processo</span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={toggleAll}>
             {allChecked ? <CheckSquare size={14}/> : <Square size={14}/>}
             {allChecked ? 'Desmarcar Todas' : 'Selecionar Todas'}

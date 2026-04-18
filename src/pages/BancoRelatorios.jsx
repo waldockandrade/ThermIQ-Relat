@@ -91,23 +91,23 @@ function EditModal({ report, allVars, onClose, onSave }) {
         title="Fechar (Esc)"
         style={{
           position:'fixed', top:20, right:20, zIndex:10001,
-          width:44, height:44, borderRadius:'50%',
-          background:'var(--accent)', color:'#fff',
+          width:40, height:40, borderRadius: 2,
+          background:'var(--text-primary)', color:'#fff',
           border:'none', cursor:'pointer',
           display:'flex', alignItems:'center', justifyContent:'center',
-          boxShadow:'0 4px 20px rgba(0,0,0,0.4)',
-          transition:'transform 0.15s',
+          boxShadow:'var(--shadow-lg)',
+          transition:'all 0.15s',
         }}
-        onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'}
-        onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+        onMouseEnter={e => e.currentTarget.style.background='var(--accent)'}
+        onMouseLeave={e => e.currentTarget.style.background='var(--text-primary)'}
       >
-        <X size={20} />
+        <X size={18} />
       </button>
 
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(15, 23, 42, 0.15)' }}>
         <div
           className="modal"
-          style={{ maxWidth:980, width:'100%', maxHeight:'92vh', overflowY:'auto', padding:0 }}
+          style={{ maxWidth:980, width:'100%', maxHeight:'92vh', overflowY:'auto', padding:0, background: 'white' }}
           onClick={e => e.stopPropagation()}
         >
           {/* Sticky header */}
@@ -321,12 +321,12 @@ function convFactor(fromUnit, toUnit) {
 function KPIBadge({ label, value, unit, color }) {
   return (
     <div style={{
-      background: `${color}12`, border: `1px solid ${color}30`,
-      borderRadius: 'var(--radius-md)', padding: '10px 16px',
+      background: 'var(--bg-surface)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-sm)', padding: '10px 16px',
       display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140,
     }}>
-      <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>
+      <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
         {value !== null ? value.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) : '—'}
         <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginLeft: 4 }}>{unit}</span>
       </div>
@@ -559,23 +559,23 @@ Enviado via ThermIQ Relat
         title="Fechar relatório (Esc)"
         style={{
           position: 'fixed', top: 20, right: 20, zIndex: 10001,
-          width: 44, height: 44, borderRadius: '50%',
-          background: 'var(--accent)', color: '#fff',
+          width: 40, height: 40, borderRadius: 2,
+          background: 'var(--text-primary)', color: '#fff',
           border: 'none', cursor: 'pointer', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          transition: 'transform 0.15s, box-shadow 0.15s',
+          boxShadow: 'var(--shadow-lg)',
+          transition: 'all 0.15s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,0,0,0.5)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';   e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.4)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--text-primary)' }}
       >
-        <X size={20} />
+        <X size={18} />
       </button>
 
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(15, 23, 42, 0.15)' }}>
         <div
           className="modal"
-          style={{ maxWidth: 900, width: '100%', maxHeight: '92vh', overflowY: 'auto', padding: 0 }}
+          style={{ maxWidth: 900, width: '100%', maxHeight: '92vh', overflowY: 'auto', padding: 0, background: 'white' }}
           onClick={e => e.stopPropagation()}
         >
           {/* ── Sticky header ── */}

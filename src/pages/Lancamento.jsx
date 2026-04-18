@@ -168,7 +168,7 @@ export default function Lancamento() {
                 className="btn btn-secondary"
                 onClick={handleAutoFill}
                 title="Preenche todos os campos com valores operacionais realistas (modo admin)"
-                style={{ borderColor: autoFilled ? 'var(--leaf)' : undefined, color: autoFilled ? 'var(--leaf-dark)' : undefined }}
+                style={{ borderColor: autoFilled ? 'var(--leaf)' : undefined, color: autoFilled ? 'var(--text-primary)' : undefined }}
               >
                 <Zap size={15}/>
                 {autoFilled ? 'Replicar Valores' : 'Auto-preencher'}
@@ -234,11 +234,11 @@ export default function Lancamento() {
 
       {/* ── Alerta de campos incompletos ── */}
       {!isComplete() && (
-        <div style={{ display:'flex', gap:8, alignItems:'center', padding:'10px 14px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'var(--radius-md)', marginBottom:'var(--space-md)', fontSize:'var(--text-sm)', color:'var(--warning)' }}>
+        <div style={{ display:'flex', gap:8, alignItems:'center', padding:'10px 14px', background:'var(--warning-glow)', border:'1px solid #fef3c7', borderRadius:'var(--radius-md)', marginBottom:'var(--space-md)', fontSize:'var(--text-sm)', color:'var(--warning)' }}>
           <AlertCircle size={15}/>
           {timeSlots.length === 0
             ? 'Preencha o horário de fim do turno para habilitar o lançamento de dados.'
-            : 'Preencha todos os campos de Totalizador Inicial, Totalizador Final e todos os slots horários para habilitar o botão de salvar.'}
+            : 'Certifique-se de preencher todos os campos (Iniciais, Finais e Slots) para salvar o relatório.'}
         </div>
       )}
 
@@ -303,11 +303,11 @@ export default function Lancamento() {
       <div className="card" style={{ marginBottom:'var(--space-lg)' }}>
         <div className="card-header">
           <span className="card-title">
-            <BookOpen size={17} style={{ color:'var(--accent)' }} />
+            <BookOpen size={16} />
             Diário de Bordo
           </span>
           <span style={{ fontSize:'var(--text-xs)', color: diario.length >= MAX_DIARIO ? 'var(--danger)' : 'var(--text-muted)' }}>
-            {diario.length}/{MAX_DIARIO}
+            {diario.length} / {MAX_DIARIO}
           </span>
         </div>
         <textarea
@@ -329,10 +329,10 @@ export default function Lancamento() {
             type="button"
             className="btn btn-secondary"
             onClick={handleAutoFill}
-            style={{ borderColor: autoFilled ? 'var(--leaf)' : undefined, color: autoFilled ? 'var(--leaf-dark)' : undefined }}
+            style={{ borderColor: autoFilled ? 'var(--leaf)' : undefined, color: autoFilled ? 'var(--text-primary)' : undefined }}
           >
             <Zap size={15}/>
-            {autoFilled ? 'Replicar Valores' : 'Auto-preencher'}
+            {autoFilled ? 'Replicar Valores' : 'Simulação Assistida'}
           </button>
         )}
         <button

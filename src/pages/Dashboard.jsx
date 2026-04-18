@@ -222,16 +222,16 @@ function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
 
   return (
     <div className="stat-card industrial bento-kpi">
-      <div className="card-header" style={{ border: 'none', padding: 0, marginBottom: 16 }}>
+      <div className="card-header" style={{ border: 'none', padding: 0, marginBottom: 12 }}>
         <div style={{ 
-          width: 36, height: 36, borderRadius: 10, 
-          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+          width: 34, height: 34, borderRadius: 4, 
+          background: 'var(--bg-surface)', border: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center' 
         }}>
-          <Icon size={18} style={{ color: statusColor }} />
+          <Icon size={16} style={{ color: statusColor }} />
         </div>
         {hasMeta && (
-          <div className="kpi-indicator" style={{ background: `${statusColor}15`, color: statusColor }}>
+          <div className="badge" style={{ background: `${statusColor}08`, color: statusColor, borderColor: `${statusColor}22` }}>
             {statusText}
           </div>
         )}
@@ -249,15 +249,15 @@ function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
 
       {hasMeta && (
         <div style={{ marginTop: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 6 }}>
             <span style={{ color: 'var(--text-muted)' }}>Alvo: <span style={{ color: 'var(--text-secondary)' }}>{meta.toLocaleString('pt-BR')}</span></span>
-            <span style={{ color: statusColor, fontWeight: 800 }}>{Math.round((safeVal / meta) * 100)}%</span>
+            <span style={{ color: statusColor, fontWeight: 700 }}>{Math.round((safeVal / meta) * 100)}%</span>
           </div>
-          <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ position: 'relative', height: 4, background: 'var(--bg-surface)', borderRadius: 2, overflow: 'hidden' }}>
              <div style={{
                 position: 'absolute', top: 0, bottom: 0, left: 0, width: `${valPct}%`,
-                background: `linear-gradient(90deg, ${statusColor}44, ${statusColor})`,
-                borderRadius: 3, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)'
+                background: statusColor,
+                borderRadius: 2, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)'
              }} />
           </div>
         </div>
@@ -273,13 +273,13 @@ function AccumCard({ label, value, unit, max, color, icon: Icon, reportCount }) 
 
   return (
     <div className="stat-card industrial bento-accum">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `1px solid ${color}33`
+          width: 34, height: 34, borderRadius: 4,
+          background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '1px solid var(--border)'
         }}>
-          <Icon size={18} style={{ color }} />
+          <Icon size={16} style={{ color }} />
         </div>
         <span className="stat-label">{label}</span>
       </div>
@@ -292,14 +292,14 @@ function AccumCard({ label, value, unit, max, color, icon: Icon, reportCount }) 
       </div>
 
       <div style={{ marginTop: 'auto' }}>
-        <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden', marginBottom: 8 }}>
+        <div style={{ height: 4, background: 'var(--bg-surface)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
           <div style={{
             height: '100%', width: `${pct * 100}%`,
-            background: `linear-gradient(90deg, ${color}88, ${color})`, 
-            borderRadius: 3, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)'
+            background: color, 
+            borderRadius: 2, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)'
           }} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)' }}>
           <span>{Math.round(pct * 100)}% do operacional</span>
           <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Max: {max.toLocaleString('pt-BR')}</span>
         </div>
@@ -366,27 +366,27 @@ function KPIChart({ title, unit, color, data, metaVal, onMetaChange, emptyMsg, c
   
   return (
     <div className={`card industrial ${className}`}>
-      <div className="card-header" style={{ border: 'none', marginBottom: 20 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="card-header" style={{ border: 'none', marginBottom: 20, padding: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span className="card-title">
-            <TrendingUp size={16} style={{ color }} /> {title}
+            <TrendingUp size={14} style={{ color }} /> {title}
           </span>
           {mean !== null && (
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }} className="stat-value-mono">
+            <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }} className="stat-value-mono">
               {mean.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>{unit} (Média)</span>
             </div>
           )}
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: 10, border: '1px solid var(--border)' }}>
-          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)' }}>META ALVO</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-surface)', padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border)' }}>
+          <label style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)' }}>META</label>
           <input
             type="number" step="any"
             className="cell-input"
             value={metaVal ?? ''}
             onChange={e => onMetaChange(e.target.value === '' ? null : parseFloat(e.target.value))}
-            style={{ width: 70, background: 'transparent', border: 'none', color: 'var(--accent)', fontWeight: 700, padding: 0 }}
+            style={{ width: 60, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontWeight: 700, padding: 0, textAlign: 'right' }}
           />
         </div>
       </div>
@@ -399,7 +399,7 @@ function KPIChart({ title, unit, color, data, metaVal, onMetaChange, emptyMsg, c
       ) : (
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
             <XAxis
               dataKey="label"
               tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
@@ -413,7 +413,7 @@ function KPIChart({ title, unit, color, data, metaVal, onMetaChange, emptyMsg, c
               tickLine={false}
               tickFormatter={v => v.toLocaleString('pt-BR')}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border)', strokeWidth: 1 }} />
             {metaVal !== null && (
               <ReferenceLine y={metaVal} stroke="var(--accent)" strokeDasharray="5 5" opacity={0.5} />
             )}

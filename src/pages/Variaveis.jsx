@@ -52,7 +52,7 @@ function CategoryRow({ cat, isAdmin }) {
         onClick={() => !editing && setOpen(v => !v)}
         style={{ 
           padding: '16px 20px', 
-          background: open ? 'rgba(255,255,255,0.02)' : 'transparent',
+          background: open ? 'var(--bg-surface)' : 'transparent',
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
@@ -61,8 +61,8 @@ function CategoryRow({ cat, isAdmin }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
           <div style={{ 
-            width: 32, height: 32, borderRadius: 8, 
-            background: open ? 'var(--accent-glow)' : 'rgba(255,255,255,0.05)',
+            width: 32, height: 32, borderRadius: 2, 
+            background: open ? 'var(--accent-glow)' : 'var(--bg-surface)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.3s'
           }}>
@@ -135,7 +135,7 @@ function CategoryRow({ cat, isAdmin }) {
                         />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'monospace', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: 4 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'monospace', background: 'var(--bg-surface)', padding: '2px 6px', borderRadius: 1 }}>
                             {v.id?.slice(-4).toUpperCase() || '---'}
                           </span>
                           <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{v.name}</span>
@@ -176,7 +176,7 @@ function CategoryRow({ cat, isAdmin }) {
                 ))}
 
                 {newVar && (
-                  <tr style={{ background: 'rgba(249,115,22,0.03)' }}>
+                  <tr style={{ background: 'var(--accent-soft)' }}>
                     <td>
                       <input
                         className="cell-input"
@@ -325,20 +325,21 @@ export default function Variaveis() {
           className="card-header"
           onClick={() => setCfgOpen(v => !v)}
           style={{ 
-            cursor:'pointer', padding: '20px 24px', background: cfgOpen ? 'rgba(255,255,255,0.02)' : 'transparent',
+            cursor:'pointer', padding: '20px 24px', background: cfgOpen ? 'var(--bg-surface)' : 'transparent',
             borderBottom: cfgOpen ? '1px solid var(--border)' : 'none'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ 
-              width: 36, height: 36, borderRadius: 10, background: 'rgba(249,115,22,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              width: 36, height: 36, borderRadius: 2, background: 'var(--bg-surface)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '1px solid var(--border)'
             }}>
-              <Settings2 size={18} style={{ color:'var(--accent)' }} />
+              <Settings2 size={18} style={{ color:'var(--text-primary)' }} />
             </div>
             <div>
               <span className="card-title" style={{ display: 'block' }}>Configurações do Dashboard</span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Calibração de metas e indicadores operacionais</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Configuração de indicadores e KPIs</span>
             </div>
           </div>
           <div style={{ color: 'var(--text-muted)', transform: cfgOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}>
@@ -360,8 +361,8 @@ export default function Variaveis() {
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
                   {(dashboardConfig.customQuantitatives || []).map((q, i) => (
                     <div key={q.id} className="card" style={{
-                      background:'rgba(255,255,255,0.01)', border:`1px solid var(--border)`,
-                      padding: '16px', position:'relative', borderRadius: 12
+                      background:'white', border:`1px solid var(--border)`,
+                      padding: '16px', position:'relative', borderRadius: 'var(--radius-md)'
                     }}>
                       {isAdmin() && (
                          <button onClick={() => rmQuant(i)} className="btn btn-sm btn-ghost" style={{ position:'absolute', top:12, right:12, color:'var(--danger)', padding: 6, borderRadius: 6 }}>
@@ -372,7 +373,7 @@ export default function Variaveis() {
                       <div style={{ display:'flex', flexDirection: 'column', gap: 12 }}>
                         <div style={{ display:'flex', gap: 8 }}>
                           <input className="cell-input" value={q.label} onChange={e => updateQuant(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Título" style={{ flex: 1, margin: 0 }} />
-                          <input type="color" value={q.color} onChange={e => updateQuant(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width: 40, height: 38, padding: 2, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }} />
+                          <input type="color" value={q.color} onChange={e => updateQuant(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width: 40, height: 38, padding: 2, background: 'transparent', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer' }} />
                         </div>
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -403,8 +404,8 @@ export default function Variaveis() {
                 <div style={{ display:'flex', flexDirection:'column', gap: '12px' }}>
                   {(dashboardConfig.customKPIs || []).map((k, i) => (
                     <div key={k.id} className="card" style={{
-                      background:'rgba(255,255,255,0.01)', border:'1px solid var(--border)',
-                      padding:'16px', borderRadius: 12
+                      background:'white', border:'1px solid var(--border)',
+                      padding:'16px', borderRadius: 'var(--radius-md)'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                          <input className="cell-input" value={k.label} onChange={e => updateKpi(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Nome do KPI" style={{ flex: 1, margin: 0 }} />
@@ -416,8 +417,8 @@ export default function Variaveis() {
                          )}
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, background: 'rgba(0,0,0,0.2)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, background: 'var(--bg-surface)', padding: 20, borderRadius: 2, border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)' }}>NUMERADOR</span>
                           <select className="cell-input" value={k.numVarId} onChange={e => updateKpi(i, 'numVarId', e.target.value)} disabled={!isAdmin()} style={{ margin: 0 }}>
                             {allVars.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}

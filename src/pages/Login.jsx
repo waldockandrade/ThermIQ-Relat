@@ -28,18 +28,13 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-bg">
-        <div className="bg-grid" />
-        <div className="bg-glow" />
-      </div>
-
       <div className="login-container">
         {/* Lado Esquerdo — Branding */}
         <div className="login-brand">
           <div className="brand-logo-framed">
             <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Rounded Square Frame */}
-              <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" strokeWidth="2.5" opacity="0.3" style={{ color: '#fff' }} />
+              {/* Rounded Square Frame — Sharper for formal industrial look */}
+              <rect x="2" y="2" width="36" height="36" rx="2" stroke="currentColor" strokeWidth="2.5" className="logo-frame" />
               
               {/* Flame Shape */}
               <path d="M16 8 C16 8 8 16 8 24 C8 30 11.5 34 16 34 C20.5 34 24 30 24 24 C24 19 20 14 18 11 C18 11 18 17 15 19 C12 21 10 24 12 27 C12 27 9 25 9 21 C9 17 16 8 16 8Z"
@@ -62,7 +57,7 @@ export default function Login() {
             </svg>
           </div>
           <h1>Therm<span>IQ</span></h1>
-          <p>Inteligência operacional e monitoramento de ativos térmicos industriais.</p>
+          <p>Plataforma técnica de gestão e monitoramento de ativos térmicos industriais.</p>
 
           <div className="brand-stats">
             <div className="brand-stat">

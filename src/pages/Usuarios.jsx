@@ -136,7 +136,7 @@ export default function Usuarios() {
                   <tr key={u.id}>
                     <td>
                       <div style={{ display:'flex', alignItems:'center', gap: 12 }}>
-                        <div className="user-avatar" style={{ background: u.role === 'admin' ? 'linear-gradient(135deg, var(--accent), var(--accent-dark))' : 'var(--bg-surface)', color: '#fff' }}>
+                        <div className="user-avatar" style={{ background: u.role === 'admin' ? 'var(--text-primary)' : 'var(--bg-surface)', color: u.role === 'admin' ? 'white' : 'var(--text-primary)' }}>
                           {u.name?.charAt(0).toUpperCase()}
                         </div>
                         <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</span>
@@ -172,8 +172,8 @@ export default function Usuarios() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)} style={{ backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.7)' }}>
-          <div className="modal card industrial" onClick={e => e.stopPropagation()} style={{ maxWidth: 500, border: '1px solid var(--border-active)' }}>
+        <div className="modal-overlay" onClick={() => setShowModal(false)} style={{ backdropFilter: 'blur(4px)', background: 'rgba(15, 23, 42, 0.15)' }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500, background: 'white' }}>
             <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 18 }}>{editId ? 'Configurar Credenciais' : 'Registrar Novo Usuário'}</h3>
@@ -215,7 +215,7 @@ export default function Usuarios() {
                 </div>
 
                 {error && (
-                  <div style={{ padding:'12px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#f87171', fontSize: 13, fontWeight: 500 }}>
+                  <div style={{ padding:'10px', background:'var(--danger-glow)', border:'1px solid #fecaca', borderRadius: 1, color: 'var(--danger)', fontSize: 13, fontWeight: 500 }}>
                     ⚠️ {error}
                   </div>
                 )}
