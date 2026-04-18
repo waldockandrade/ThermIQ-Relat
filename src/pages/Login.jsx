@@ -17,7 +17,6 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    await new Promise(r => setTimeout(r, 400))
     const result = await login(email, password)
     setLoading(false)
     if (result.ok) {
@@ -29,65 +28,67 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      {/* Background grid */}
       <div className="login-bg">
         <div className="bg-grid" />
         <div className="bg-glow" />
       </div>
 
       <div className="login-container">
-        {/* Left — Branding */}
+        {/* Lado Esquerdo — Branding */}
         <div className="login-brand">
-          <div className="brand-logo">
-            <svg width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 4 C18 4 10 12 10 20 C10 26 13.5 30 18 30 C22.5 30 26 26 26 20 C26 15 22 10 20 7 C20 7 20 13 17 15 C14 17 12 20 14 23 C14 23 11 21 11 17 C11 13 18 4 18 4Z"
-                fill="url(#flameGradL)" />
-              <path d="M16 22 C16 22 14 18 18 15 C22 12 24 14 24 14 C24 14 22 22 16 22Z"
-                fill="url(#leafGradL)" opacity="0.95"/>
+          <div className="brand-logo-framed">
+            <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Rounded Square Frame */}
+              <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" strokeWidth="2.5" opacity="0.3" style={{ color: '#fff' }} />
+              
+              {/* Flame Shape */}
+              <path d="M16 8 C16 8 8 16 8 24 C8 30 11.5 34 16 34 C20.5 34 24 30 24 24 C24 19 20 14 18 11 C18 11 18 17 15 19 C12 21 10 24 12 27 C12 27 9 25 9 21 C9 17 16 8 16 8Z"
+                fill="url(#flameGradLogin)" />
+              
+              {/* Leaf Shape */}
+              <path d="M18 26 C18 26 15 21 21 17 C27 13 31 16 31 16 C31 16 28 26 18 26Z"
+                fill="url(#leafGradLogin)" />
+                
               <defs>
-                <linearGradient id="flameGradL" x1="18" y1="4" x2="18" y2="30" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#fb923c"/>
+                <linearGradient id="flameGradLogin" x1="16" y1="8" x2="16" y2="34" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#f97316"/>
                   <stop offset="100%" stopColor="#ea6c10"/>
                 </linearGradient>
-                <linearGradient id="leafGradL" x1="16" y1="23" x2="24" y2="13" gradientUnits="userSpaceOnUse">
+                <linearGradient id="leafGradLogin" x1="18" y1="28" x2="31" y2="15" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stopColor="#4ade80"/>
                   <stop offset="100%" stopColor="#16a34a"/>
                 </linearGradient>
               </defs>
             </svg>
           </div>
-          <h1>ThermIQ<br /><span>RELAT</span></h1>
-          <p>Monitoramento operacional de caldeiras a biomassa.</p>
+          <h1>Therm<span>IQ</span></h1>
+          <p>Inteligência operacional e monitoramento de ativos térmicos industriais.</p>
+
           <div className="brand-stats">
             <div className="brand-stat">
-              <span className="bs-val">8</span>
-              <span className="bs-lbl">Módulos</span>
+              <span className="bs-val">100%</span>
+              <span className="bs-lbl">Cloud</span>
             </div>
             <div className="brand-stat">
-              <span className="bs-val">PT-BR</span>
-              <span className="bs-lbl">Idioma</span>
-            </div>
-            <div className="brand-stat">
-              <span className="bs-val">MVP</span>
-              <span className="bs-lbl">Versão</span>
+              <span className="bs-val">Real</span>
+              <span className="bs-lbl">Time</span>
             </div>
           </div>
         </div>
 
-        {/* Right — Form */}
+        {/* Lado Direito — Formulário */}
         <div className="login-form-box">
           <div className="login-form-header">
-            <h2>Entrar no sistema</h2>
-            <p>Use suas credenciais de acesso</p>
+            <h2>Acesso Restrito</h2>
+            <p>Identifique-se para gerenciar o sistema</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
-              <label htmlFor="login-email">E-mail</label>
+              <label>E-MAIL CORPORATIVO</label>
               <input
-                id="login-email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder="nome@empresa.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -96,10 +97,9 @@ export default function Login() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="login-password">Senha</label>
+              <label>CHAVE DE ACESSO</label>
               <div className="pw-wrapper">
                 <input
-                  id="login-password"
                   type={showPw ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
@@ -108,26 +108,33 @@ export default function Login() {
                   autoComplete="current-password"
                 />
                 <button type="button" className="pw-toggle" onClick={() => setShowPw(v => !v)}>
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
             {error && (
               <div className="login-error">
-                <AlertCircle size={15} />
+                <AlertCircle size={18} />
                 <span>{error}</span>
               </div>
             )}
 
             <button type="submit" className="btn btn-primary login-submit" disabled={loading}>
-              {loading ? <><span className="spinner" />Verificando...</> : 'Entrar'}
+              {loading ? (
+                <>Verificando Credenciais...</>
+              ) : (
+                <>Entrar no Dashboard</>
+              )}
             </button>
-
-            {/* login-hint removido — não exibir credenciais em produção */}
           </form>
+          
+          <p style={{ marginTop: 32, fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+            &copy; 2026 ThermIQ Industrial. Todos os direitos reservados.
+          </p>
         </div>
       </div>
     </div>
   )
 }
+

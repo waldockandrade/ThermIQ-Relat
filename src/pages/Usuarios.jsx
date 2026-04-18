@@ -96,69 +96,71 @@ export default function Usuarios() {
         <div className="page-header-row">
           <div>
             <h1>Gestão de Usuários</h1>
-            <p>Amministração de acessos ao sistema ThermIQ Relat</p>
+            <p>Administração de acessos e permissões do sistema</p>
           </div>
-          <button className="btn btn-primary" onClick={openAdd} disabled={dbLoading}><Plus size={16}/> Novo Usuário</button>
+          <button className="btn btn-primary" onClick={openAdd} disabled={dbLoading}>
+            <Plus size={16}/> Novo Usuário
+          </button>
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" style={{ padding: 0 }}>
         <div className="table-wrapper">
           {dbLoading ? (
-             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-               Carregando usuários...
+             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+               Sincronizando banco de dados...
              </div>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Nome</th>
-                  <th>E-mail</th>
-                  <th>Perfil</th>
+                  <th>Colaborador</th>
+                  <th>E-mail Corporativo</th>
+                  <th>Permissão</th>
                   <th>Contato</th>
-                  <th style={{ width:100 }}>Ações</th>
+                  <th style={{ width: 100, textAlign: 'right' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 && (
-                  <tr><td colSpan={5}>
-                    <div className="empty-state"><Users size={36}/><h4>Sem usuários</h4></div>
-                  </td></tr>
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="empty-state" style={{ padding: '60px', textAlign: 'center' }}>
+                        <Users size={40} style={{ opacity: 0.1, marginBottom: 16 }} />
+                        <h4 style={{ color: 'var(--text-muted)' }}>Nenhum registro encontrado</h4>
+                      </div>
+                    </td>
+                  </tr>
                 )}
                 {users.map(u => (
                   <tr key={u.id}>
                     <td>
-                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <div style={{
-                          width:30, height:30, borderRadius:'50%',
-                          background: u.role === 'admin' ? 'linear-gradient(135deg,var(--accent),var(--accent-dark))' : 'var(--bg-input)',
-                          display:'flex', alignItems:'center', justifyContent:'center',
-                          fontSize:'var(--text-xs)', fontWeight:700, color:'white',
-                          flexShrink:0,
-                        }}>
+                      <div style={{ display:'flex', alignItems:'center', gap: 12 }}>
+                        <div className="user-avatar" style={{ background: u.role === 'admin' ? 'linear-gradient(135deg, var(--accent), var(--accent-dark))' : 'var(--bg-surface)', color: '#fff' }}>
                           {u.name?.charAt(0).toUpperCase()}
                         </div>
-                        <span style={{ fontWeight:500, color:'var(--text-primary)' }}>{u.name}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</span>
                       </div>
                     </td>
-                    <td style={{ fontFamily:'monospace', fontSize:'var(--text-sm)' }}>{u.email}</td>
+                    <td style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{u.email}</td>
                     <td>
                       <span className={`badge ${u.role === 'admin' ? 'badge-accent' : 'badge-info'}`}>
-                        {u.role === 'admin' ? <Shield size={11}/> : <User size={11}/>}
-                        {u.role === 'admin' ? 'Admin' : 'Staff'}
+                        {u.role === 'admin' ? <Shield size={12}/> : <User size={12}/>}
+                        {u.role === 'admin' ? 'ADMINISTRADOR' : 'OPERADOR'}
                       </span>
                     </td>
-                    <td style={{ color:'var(--text-muted)' }}>{u.contact || '—'}</td>
-                    <td>
-                      <div style={{ display:'flex', gap:6 }}>
-                        <button className="btn btn-sm btn-ghost btn-icon" onClick={() => openEdit(u)}><Pencil size={13}/></button>
-                        {/* A-07: desabilita exclusão do próprio usuário logado */}
+                    <td style={{ color: 'var(--text-muted)' }}>{u.contact || '—'}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button className="btn btn-sm btn-ghost btn-icon" onClick={() => openEdit(u)}><Pencil size={15}/></button>
                         <button
-                          className="btn btn-sm btn-danger btn-icon"
+                          className="btn btn-sm btn-ghost btn-icon"
+                          style={{ color: 'var(--danger)' }}
                           onClick={() => handleDelete(u.id)}
                           disabled={u.id === currentUser?.id}
-                          title={u.id === currentUser?.id ? 'Não é possível excluir sua própria conta' : 'Excluir usuário'}
-                        ><Trash2 size={13}/></button>
+                        >
+                          <Trash2 size={15}/>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -170,50 +172,60 @@ export default function Usuarios() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editId ? 'Editar Usuário' : 'Novo Usuário'}</h3>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowModal(false)}><X size={16}/></button>
+        <div className="modal-overlay" onClick={() => setShowModal(false)} style={{ backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.7)' }}>
+          <div className="modal card industrial" onClick={e => e.stopPropagation()} style={{ maxWidth: 500, border: '1px solid var(--border-active)' }}>
+            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18 }}>{editId ? 'Configurar Credenciais' : 'Registrar Novo Usuário'}</h3>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Informe os dados de acesso e permissão</p>
+              </div>
+              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowModal(false)}><X size={20}/></button>
             </div>
-            <form onSubmit={handleSave}>
-              <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-md)' }}>
+            
+            <form onSubmit={handleSave} style={{ padding: '24px' }}>
+              <div style={{ display:'flex', flexDirection:'column', gap: 16 }}>
                 <div className="form-group">
-                  <label htmlFor="usr-nome">Nome completo</label>
-                  <input id="usr-nome" type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Ex: João da Silva" required />
+                  <label>NOME COMPLETO</label>
+                  <input className="cell-input" type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Ex: Waldo Andrade" required />
                 </div>
+                
                 <div className="form-group">
-                  <label htmlFor="usr-email">E-mail</label>
-                  <input id="usr-email" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@empresa.com" required />
+                  <label>ENDEREÇO DE E-MAIL</label>
+                  <input className="cell-input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="exemplo@thermiq.com" required />
                 </div>
+                
                 <div className="form-group">
-                  <label htmlFor="usr-pw">
-                    {editId ? 'Nova Senha (deixe em branco para manter a atual)' : 'Senha de Acesso'}
-                  </label>
-                  <input id="usr-pw" type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder={editId ? "••••••••" : "Digite uma senha segura"} required={!editId} />
+                  <label>{editId ? 'REDEFINIR SENHA (OPCIONAL)' : 'SENHA DE ACESSO'}</label>
+                  <input className="cell-input" type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder={editId ? "••••••••" : "Mínimo 6 caracteres"} required={!editId} />
+                  {editId && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Deixe em branco para manter a senha atual</span>}
                 </div>
-                <div className="form-row">
+                
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="form-group">
-                    <label htmlFor="usr-role">Perfil</label>
-                    <select id="usr-role" value={form.role} onChange={e => set('role', e.target.value)}>
-                      <option value="staff">Staff</option>
-                      <option value="admin">Admin</option>
+                    <label>NÍVEL DE PERMISSÃO</label>
+                    <select className="cell-input" value={form.role} onChange={e => set('role', e.target.value)}>
+                      <option value="staff">Staff Operacional</option>
+                      <option value="admin">Administrador</option>
                     </select>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="usr-contact">Contato</label>
-                    <input id="usr-contact" type="text" value={form.contact} onChange={e => set('contact', e.target.value)} placeholder="Telefone ou ramal" />
+                    <label>CONTATO / RAMAL</label>
+                    <input className="cell-input" type="text" value={form.contact} onChange={e => set('contact', e.target.value)} placeholder="(00) 0000-0000" />
                   </div>
                 </div>
+
                 {error && (
-                  <div style={{ padding:'10px 14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'var(--radius-md)', color:'var(--danger-light)', fontSize:'var(--text-sm)' }}>
-                    {error}
+                  <div style={{ padding:'12px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#f87171', fontSize: 13, fontWeight: 500 }}>
+                    ⚠️ {error}
                   </div>
                 )}
               </div>
-              <div className="modal-footer">
+              
+              <div className="modal-footer" style={{ padding: '24px 0 0', marginTop: 24, borderTop: '1px solid var(--border)', display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary"><Check size={15}/> Salvar</button>
+                <button type="submit" className="btn btn-primary" style={{ padding: '10px 24px' }}>
+                  <Check size={16} style={{ marginRight: 8 }}/> Finalizar Registro
+                </button>
               </div>
             </form>
           </div>
@@ -222,3 +234,4 @@ export default function Usuarios() {
     </div>
   )
 }
+

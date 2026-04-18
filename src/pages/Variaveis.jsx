@@ -14,9 +14,8 @@ function CategoryRow({ cat, isAdmin }) {
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState(false)
   const [catName, setCatName] = useState(cat.name)
-  const [newVar, setNewVar]   = useState(null)   // {name:'', unit:'°C'}
-  const [editVar, setEditVar] = useState(null)   // varId being edited
-  // A-02: estado controlado para edição de variáveis
+  const [newVar, setNewVar]   = useState(null)
+  const [editVar, setEditVar] = useState(null)
   const [editVarForm, setEditVarForm] = useState({ name: '', unit: '' })
 
   function saveCategory() {
@@ -34,7 +33,6 @@ function CategoryRow({ cat, isAdmin }) {
     setNewVar(null)
   }
 
-  // A-02: inicializa estado ao entrar em modo de edição
   function startEditVar(v) {
     setEditVarForm({ name: v.name, unit: v.unit })
     setEditVar(v.id)
@@ -48,54 +46,79 @@ function CategoryRow({ cat, isAdmin }) {
   }
 
   return (
-    <div className="accordion">
-      <div className="accordion-header" onClick={() => !editing && setOpen(v => !v)}>
-        {editing ? (
-          <input
-            value={catName}
-            onChange={e => setCatName(e.target.value)}
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => e.key === 'Enter' && saveCategory()}
-            autoFocus
-            style={{ width: '60%' }}
-          />
-        ) : (
-          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-            <Layers size={15} style={{ display:'inline', marginRight:8, color:'var(--accent)' }} />
-            {cat.name}
-            <span className="badge badge-muted" style={{ marginLeft:10 }}>{cat.variables.length} variáveis</span>
-          </span>
-        )}
+    <div className={`card ${open ? 'open' : ''}`} style={{ padding: 0, overflow: 'hidden', border: open ? '1px solid var(--border-active)' : '1px solid var(--border)' }}>
+      <div 
+        className="accordion-header" 
+        onClick={() => !editing && setOpen(v => !v)}
+        style={{ 
+          padding: '16px 20px', 
+          background: open ? 'rgba(255,255,255,0.02)' : 'transparent',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          cursor: 'pointer'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+          <div style={{ 
+            width: 32, height: 32, borderRadius: 8, 
+            background: open ? 'var(--accent-glow)' : 'rgba(255,255,255,0.05)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.3s'
+          }}>
+            <Layers size={16} style={{ color: open ? 'var(--accent)' : 'var(--text-muted)' }} />
+          </div>
+          
+          {editing ? (
+            <input
+              value={catName}
+              onChange={e => setCatName(e.target.value)}
+              onClick={e => e.stopPropagation()}
+              onKeyDown={e => e.key === 'Enter' && saveCategory()}
+              autoFocus
+              style={{ width: 'min(300px, 80%)', margin: 0 }}
+            />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 15, letterSpacing: '-0.01em' }}>{cat.name}</span>
+              <span className="badge">
+                {cat.variables.length} VARIÁVEIS
+              </span>
+            </div>
+          )}
+        </div>
 
         <div style={{ display:'flex', gap:8, alignItems:'center' }} onClick={e => e.stopPropagation()}>
           {isAdmin && (
-            <>
+            <div style={{ display: 'flex', gap: 6 }}>
               {editing ? (
                 <>
-                  <button className="btn btn-sm btn-success" onClick={saveCategory}><Check size={13}/></button>
-                  <button className="btn btn-sm btn-ghost" onClick={() => { setEditing(false); setCatName(cat.name) }}><X size={13}/></button>
+                  <button className="btn btn-sm btn-success btn-icon" onClick={saveCategory}><Check size={14}/></button>
+                  <button className="btn btn-sm btn-ghost btn-icon" onClick={() => { setEditing(false); setCatName(cat.name) }}><X size={14}/></button>
                 </>
               ) : (
                 <>
-                  <button className="btn btn-sm btn-ghost btn-icon" onClick={() => setEditing(true)}><Pencil size={13}/></button>
-                  <button className="btn btn-sm btn-danger btn-icon" onClick={() => deleteCategory(cat.id)}><Trash2 size={13}/></button>
+                  <button className="btn btn-sm btn-ghost btn-icon" onClick={() => setEditing(true)}><Pencil size={14}/></button>
+                  <button className="btn btn-sm btn-ghost btn-icon" style={{ color: 'var(--danger)' }} onClick={() => deleteCategory(cat.id)}><Trash2 size={14}/></button>
                 </>
               )}
-            </>
+            </div>
           )}
-          {open ? <ChevronUp size={16} style={{ color:'var(--text-muted)' }}/> : <ChevronDown size={16} style={{ color:'var(--text-muted)' }}/>}
+          <div style={{ padding: 4, color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}>
+            <ChevronDown size={18} />
+          </div>
         </div>
       </div>
 
       {open && (
-        <div className="accordion-body">
+        <div style={{ padding: '0 20px 20px' }}>
           <div className="table-wrapper">
-            <table>
+            <table className="industrial-table">
               <thead>
                 <tr>
-                  <th>Variável</th>
+                  <th style={{ width: '60%' }}>ID / Nome da Variável</th>
                   <th>Unidade</th>
-                  {isAdmin && <th style={{ width:100 }}>Ações</th>}
+                  {isAdmin && <th style={{ width: 100, textAlign: 'right' }}>Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -103,41 +126,47 @@ function CategoryRow({ cat, isAdmin }) {
                   <tr key={v.id}>
                     <td>
                       {editVar === v.id ? (
-                        // A-02: inputs controlados por estado React
                         <input
                           value={editVarForm.name}
                           onChange={e => setEditVarForm(p => ({ ...p, name: e.target.value }))}
                           onKeyDown={e => e.key === 'Enter' && saveEditVar(v)}
                           autoFocus
-                          style={{ width:'100%' }}
+                          style={{ margin: 0 }}
                         />
-                      ) : v.name}
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'monospace', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: 4 }}>
+                            {v.id?.slice(-4).toUpperCase() || '---'}
+                          </span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{v.name}</span>
+                        </div>
+                      )}
                     </td>
                     <td>
                       {editVar === v.id ? (
                         <select
                           value={editVarForm.unit}
                           onChange={e => setEditVarForm(p => ({ ...p, unit: e.target.value }))}
-                          style={{ width:'100%' }}
+                          style={{ margin: 0 }}
                         >
                           {UNITS.map(u => <option key={u}>{u}</option>)}
                         </select>
                       ) : (
-                        <span className="badge badge-muted">{v.unit}</span>
+                        <span className="badge badge-accent">{v.unit}</span>
                       )}
                     </td>
                     {isAdmin && (
-                      <td>
-                        <div style={{ display:'flex', gap:6 }}>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display:'flex', gap:8, justifyContent: 'flex-end' }}>
                           {editVar === v.id ? (
                             <>
-                              <button className="btn btn-sm btn-success btn-icon" onClick={() => saveEditVar(v)}><Check size={13}/></button>
-                              <button className="btn btn-sm btn-ghost btn-icon" onClick={() => setEditVar(null)}><X size={13}/></button>
+                              <button className="btn btn-sm btn-success btn-icon" onClick={() => saveEditVar(v)}><Check size={14}/></button>
+                              <button className="btn btn-sm btn-ghost btn-icon" onClick={() => setEditVar(null)}><X size={14}/></button>
                             </>
                           ) : (
                             <>
-                              <button className="btn btn-sm btn-ghost btn-icon" onClick={() => startEditVar(v)}><Pencil size={13}/></button>
-                              <button className="btn btn-sm btn-danger btn-icon" onClick={() => deleteVariable(cat.id, v.id)}><Trash2 size={13}/></button>
+                              <button className="btn btn-sm btn-ghost btn-icon" onClick={() => startEditVar(v)}><Pencil size={14}/></button>
+                              <button className="btn btn-sm btn-ghost btn-icon" style={{ color: 'var(--danger)' }} onClick={() => deleteVariable(cat.id, v.id)}><Trash2 size={14}/></button>
                             </>
                           )}
                         </div>
@@ -147,35 +176,27 @@ function CategoryRow({ cat, isAdmin }) {
                 ))}
 
                 {newVar && (
-                  <tr>
+                  <tr style={{ background: 'rgba(249,115,22,0.03)' }}>
                     <td>
                       <input
+                        className="cell-input"
                         placeholder="Nome da variável"
                         value={newVar.name}
                         onChange={e => setNewVar(p => ({ ...p, name: e.target.value }))}
                         onKeyDown={e => e.key === 'Enter' && saveNewVar()}
                         autoFocus
+                        style={{ width: '100%', margin: 0 }}
                       />
                     </td>
                     <td>
-                      <select value={newVar.unit} onChange={e => setNewVar(p => ({ ...p, unit: e.target.value }))}>
+                      <select className="cell-input" value={newVar.unit} onChange={e => setNewVar(p => ({ ...p, unit: e.target.value }))} style={{ width: '100%', margin: 0 }}>
                         {UNITS.map(u => <option key={u}>{u}</option>)}
                       </select>
                     </td>
-                    <td>
-                      <div style={{ display:'flex', gap:6 }}>
-                        <button className="btn btn-sm btn-success btn-icon" onClick={saveNewVar}><Check size={13}/></button>
-                        <button className="btn btn-sm btn-ghost btn-icon" onClick={() => setNewVar(null)}><X size={13}/></button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-
-                {cat.variables.length === 0 && !newVar && (
-                  <tr>
-                    <td colSpan={3}>
-                      <div className="empty-state" style={{ padding:'var(--space-lg)' }}>
-                        <p>Nenhuma variável cadastrada.</p>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display:'flex', gap:6, justifyContent: 'flex-end' }}>
+                        <button className="btn btn-sm btn-success btn-icon" onClick={saveNewVar}><Check size={14}/></button>
+                        <button className="btn btn-sm btn-ghost btn-icon" onClick={() => setNewVar(null)}><X size={14}/></button>
                       </div>
                     </td>
                   </tr>
@@ -185,7 +206,7 @@ function CategoryRow({ cat, isAdmin }) {
           </div>
 
           {isAdmin && !newVar && (
-            <button className="btn btn-ghost btn-sm" style={{ marginTop:12 }} onClick={startAddVar}>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 16, border: '1px dashed var(--border)', width: '100%', borderRadius: 8 }} onClick={startAddVar}>
               <Plus size={14}/> Adicionar variável
             </button>
           )}
@@ -194,6 +215,7 @@ function CategoryRow({ cat, isAdmin }) {
     </div>
   )
 }
+
 
 export default function Variaveis() {
   const { categories, addCategory, dashboardConfig, updateDashboardConfig, getAllVariables } = useAppData()
@@ -298,169 +320,144 @@ export default function Variaveis() {
       {/* ─────────────────────────────────────────────────
           CONFIGURAÇÕES DO DASHBOARD
       ───────────────────────────────────────────────── */}
-      <div className="card" style={{ marginTop:'var(--space-xl)' }}>
-        {/* Header clicavel */}
+      <div className="card industrial" style={{ marginTop:'var(--space-xl)', padding: 0, overflow: 'hidden' }}>
         <div
           className="card-header"
           onClick={() => setCfgOpen(v => !v)}
-          style={{ cursor:'pointer', userSelect:'none', paddingBottom: cfgOpen ? undefined : 0, borderBottom: cfgOpen ? undefined : 'none' }}
+          style={{ 
+            cursor:'pointer', padding: '20px 24px', background: cfgOpen ? 'rgba(255,255,255,0.02)' : 'transparent',
+            borderBottom: cfgOpen ? '1px solid var(--border)' : 'none'
+          }}
         >
-          <span className="card-title">
-            <Settings2 size={17} style={{ color:'var(--accent)' }} />
-            Configurações do Dashboard
-          </span>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)' }}>Referenciais e metas dos KPIs</span>
-            {cfgOpen
-              ? <ChevronUp size={16} style={{ color:'var(--text-muted)' }}/>
-              : <ChevronDown size={16} style={{ color:'var(--text-muted)' }}/>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ 
+              width: 36, height: 36, borderRadius: 10, background: 'rgba(249,115,22,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Settings2 size={18} style={{ color:'var(--accent)' }} />
+            </div>
+            <div>
+              <span className="card-title" style={{ display: 'block' }}>Configurações do Dashboard</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Calibração de metas e indicadores operacionais</span>
+            </div>
+          </div>
+          <div style={{ color: 'var(--text-muted)', transform: cfgOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}>
+            <ChevronDown size={20} />
           </div>
         </div>
 
         {cfgOpen && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-xl)', paddingTop:'var(--space-lg)' }}>
+          <div style={{ padding: '24px' }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:'32px' }}>
 
-            {/* ---- Variáveis Quantitativas (Acumuladas) ---- */}
-            <div>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'var(--space-md)' }}>
-                <BarChart2 size={15} style={{ color:'var(--accent)' }}/>
-                <span style={{ fontWeight:700, fontSize:'var(--text-sm)', color:'var(--text-primary)' }}>Indicadores Quantitativos (Evolução Acumulada)</span>
-              </div>
-              <p style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)', marginBottom:'var(--space-md)' }}>
-                Selecione quais variáveis sumarizar e exibir no topo do Dashboard. Especifique referências máximas, cores e customizações de unidade.
-              </p>
-              
-              <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-md)' }}>
-                {(dashboardConfig.customQuantitatives || []).map((q, i) => (
-                  <div key={q.id} style={{
-                    background:'var(--bg-surface)', border:`1px solid var(--border)`,
-                    borderRadius:'var(--radius-md)', padding:'var(--space-md)',
-                    borderLeft: `3px solid ${q.color}`, position:'relative'
-                  }}>
-                    {isAdmin() && (
-                       <button onClick={() => rmQuant(i)} className="btn btn-sm btn-ghost btn-icon" style={{ position:'absolute', top:8, right:8, color:'var(--danger)', padding:4 }}>
-                         <Trash2 size={14} />
-                       </button>
-                    )}
-                    
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:12, marginTop:8, paddingRight:32 }}>
-                      <div style={{ display:'flex', gap:8 }}>
-                        <input value={q.label} onChange={e => updateQuant(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Tìtulo do Indicador" style={{ flex:1, marginBottom:0 }} />
-                        <select value={q.iconName} onChange={e => updateQuant(i, 'iconName', e.target.value)} disabled={!isAdmin()} style={{ width:120, marginBottom:0 }}>
-                          {Object.keys(ICONS).map(ic => <option key={ic} value={ic}>Ícone: {ic}</option>)}
-                        </select>
-                        <input type="color" value={q.color} onChange={e => updateQuant(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width:40, padding:0, height:36, cursor:'pointer' }} />
-                      </div>
+              {/* ---- Variáveis Quantitativas ---- */}
+              <div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: 12 }}>
+                  <BarChart2 size={16} style={{ color:'var(--accent)' }}/>
+                  <span style={{ fontWeight:800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Indicadores de Volume</span>
+                </div>
+                
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
+                  {(dashboardConfig.customQuantitatives || []).map((q, i) => (
+                    <div key={q.id} className="card" style={{
+                      background:'rgba(255,255,255,0.01)', border:`1px solid var(--border)`,
+                      padding: '16px', position:'relative', borderRadius: 12
+                    }}>
+                      {isAdmin() && (
+                         <button onClick={() => rmQuant(i)} className="btn btn-sm btn-ghost" style={{ position:'absolute', top:12, right:12, color:'var(--danger)', padding: 6, borderRadius: 6 }}>
+                           <Trash2 size={14} />
+                         </button>
+                      )}
                       
-                      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                        <span style={{ fontSize:10, color:'var(--text-muted)', width:50 }}>Variável:</span>
-                        <select value={q.varId} onChange={e => updateQuant(i, 'varId', e.target.value)} disabled={!isAdmin()} style={{ flex:1, marginBottom:0 }}>
-                          {allVars.map(v => <option key={v.id} value={v.id}>{v.name} ({v.unit})</option>)}
-                        </select>
-                      </div>
-
-                      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                        <span style={{ fontSize:10, color:'var(--text-muted)', width:50 }}>Progress.%:</span>
-                        <input type="number" step="any" value={q.max ?? ''} onChange={e => updateQuant(i, 'max', parseFloat(e.target.value)||0)} disabled={!isAdmin()} placeholder="Referência/Meta máx" style={{ flex:1, marginBottom:0 }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {isAdmin() && (
-                <button className="btn btn-ghost btn-sm" onClick={addQuant} style={{ marginTop:16 }}>
-                  <Plus size={14}/> Adicionar Indicador Quantitativo
-                </button>
-              )}
-            </div>
-
-            {/* ---- Metas dos KPIs ---- */}
-            <div>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'var(--space-md)' }}>
-                <Target size={15} style={{ color:'var(--accent)' }}/>
-                <span style={{ fontWeight:700, fontSize:'var(--text-sm)', color:'var(--text-primary)' }}>Métricas de Eficiência (KPIs customizados)</span>
-              </div>
-              <p style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)', marginBottom:'var(--space-md)' }}>
-                Construa fórmulas dinâmicas dividindo duas variáveis. O Dashboard calculará a evolução a cada 15 minutos.
-              </p>
-              
-              <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-md)' }}>
-                {(dashboardConfig.customKPIs || []).map((k, i) => (
-                  <div key={k.id} style={{
-                    background:'var(--bg-surface)', border:'1px solid var(--border)',
-                    borderRadius:'var(--radius-md)', padding:'var(--space-md)',
-                    borderLeft: `3px solid ${k.color}`, position:'relative'
-                  }}>
-                    {isAdmin() && (
-                       <button onClick={() => rmKpi(i)} className="btn btn-sm btn-ghost btn-icon" style={{ position:'absolute', top:8, right:8, color:'var(--danger)', padding:4 }}>
-                         <Trash2 size={14} />
-                       </button>
-                    )}
-                    
-                    <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:8, paddingRight:32 }}>
-                      <div style={{ display:'flex', gap:8 }}>
-                        <input value={k.label} onChange={e => updateKpi(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Nome do KPI" style={{ flex:1, marginBottom:0 }} />
-                        <input type="color" value={k.color} onChange={e => updateKpi(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width:40, padding:0, height:36, cursor:'pointer' }} />
-                      </div>
-
-                      <div style={{ background:'var(--bg-body)', padding:12, borderRadius:'var(--radius-md)', border:'1px dashed var(--border)' }}>
-                        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:8 }}>
-                          {/* Num */}
-                          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                            <span style={{ fontSize:10, color:'var(--text-primary)', width:35, fontWeight:600 }}>Num:</span>
-                            <select value={k.numVarId} onChange={e => updateKpi(i, 'numVarId', e.target.value)} disabled={!isAdmin()} style={{ flex:1, marginBottom:0 }}>
-                              {allVars.map(v => <option key={v.id} value={v.id}>{v.name} ({v.unit})</option>)}
-                            </select>
-                            <span style={{ fontSize:10, color:'var(--text-muted)' }}>&times;</span>
-                            <input type="number" step="any" value={k.numFactor ?? 1} onChange={e => updateKpi(i, 'numFactor', parseFloat(e.target.value)||1)} disabled={!isAdmin()} style={{ width:70, marginBottom:0 }} />
-                          </div>
-                          {/* Den */}
-                          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                            <span style={{ fontSize:10, color:'var(--text-primary)', width:35, fontWeight:600 }}>Den:</span>
-                            <select value={k.denVarId} onChange={e => updateKpi(i, 'denVarId', e.target.value)} disabled={!isAdmin()} style={{ flex:1, marginBottom:0 }}>
-                              {allVars.map(v => <option key={v.id} value={v.id}>{v.name} ({v.unit})</option>)}
-                            </select>
-                            <span style={{ fontSize:10, color:'var(--text-muted)' }}>&times;</span>
-                            <input type="number" step="any" value={k.denFactor ?? 1} onChange={e => updateKpi(i, 'denFactor', parseFloat(e.target.value)||1)} disabled={!isAdmin()} style={{ width:70, marginBottom:0 }} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12 }}>
-                        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                          <span style={{ fontSize:10, color:'var(--text-muted)', width:35 }}>Meta:</span>
-                          <input type="number" step="any" value={k.meta ?? ''} onChange={e => updateKpi(i, 'meta', e.target.value === '' ? null : parseFloat(e.target.value))} disabled={!isAdmin()} placeholder="Sem meta" style={{ flex:1, marginBottom:0 }} />
+                      <div style={{ display:'flex', flexDirection: 'column', gap: 12 }}>
+                        <div style={{ display:'flex', gap: 8 }}>
+                          <input className="cell-input" value={q.label} onChange={e => updateQuant(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Título" style={{ flex: 1, margin: 0 }} />
+                          <input type="color" value={q.color} onChange={e => updateQuant(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width: 40, height: 38, padding: 2, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }} />
                         </div>
                         
-                        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                          <span style={{ fontSize:10, color:'var(--text-muted)', width:60 }}>Un Final:</span>
-                          <input value={k.unit ?? ''} onChange={e => updateKpi(i, 'unit', e.target.value)} disabled={!isAdmin()} placeholder="Ex: kg/m³" style={{ flex:1, marginBottom:0 }} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <select className="cell-input" value={q.varId} onChange={e => updateQuant(i, 'varId', e.target.value)} disabled={!isAdmin()} style={{ margin: 0 }}>
+                            {allVars.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                          </select>
+                          <input className="cell-input" type="number" step="any" value={q.max ?? ''} onChange={e => updateQuant(i, 'max', parseFloat(e.target.value)||0)} disabled={!isAdmin()} placeholder="Referencial Máx" style={{ margin: 0 }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {isAdmin() && (
+                    <button className="btn btn-ghost" onClick={addQuant} style={{ border: '1px dashed var(--border)', height: '100px', borderRadius: 12 }}>
+                      <Plus size={18} style={{ marginBottom: 4 }} /><br/>Novo Indicador
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ---- KPIs de Eficiência ---- */}
+              <div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: 12 }}>
+                  <Target size={16} style={{ color:'var(--accent)' }}/>
+                  <span style={{ fontWeight:800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Métricas de Eficiência</span>
+                </div>
+                
+                <div style={{ display:'flex', flexDirection:'column', gap: '12px' }}>
+                  {(dashboardConfig.customKPIs || []).map((k, i) => (
+                    <div key={k.id} className="card" style={{
+                      background:'rgba(255,255,255,0.01)', border:'1px solid var(--border)',
+                      padding:'16px', borderRadius: 12
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                         <input className="cell-input" value={k.label} onChange={e => updateKpi(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Nome do KPI" style={{ flex: 1, margin: 0 }} />
+                         <input type="color" value={k.color} onChange={e => updateKpi(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width: 40, height: 38, padding: 2, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8 }} />
+                         {isAdmin() && (
+                           <button onClick={() => rmKpi(i)} className="btn btn-sm btn-ghost" style={{ color: 'var(--danger)', padding: 8 }}>
+                             <Trash2 size={16} />
+                           </button>
+                         )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, background: 'rgba(0,0,0,0.2)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)' }}>NUMERADOR</span>
+                          <select className="cell-input" value={k.numVarId} onChange={e => updateKpi(i, 'numVarId', e.target.value)} disabled={!isAdmin()} style={{ margin: 0 }}>
+                            {allVars.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--leaf)' }}>DENOMINADOR</span>
+                          <select className="cell-input" value={k.denVarId} onChange={e => updateKpi(i, 'denVarId', e.target.value)} disabled={!isAdmin()} style={{ margin: 0 }}>
+                            {allVars.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)' }}>META ALVO</span>
+                          <input className="cell-input" type="number" step="any" value={k.meta ?? ''} onChange={e => updateKpi(i, 'meta', e.target.value === '' ? null : parseFloat(e.target.value))} disabled={!isAdmin()} placeholder="0.00" style={{ margin: 0 }} />
+                        </div>
+                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)' }}>UNIDADE</span>
+                          <input className="cell-input" value={k.unit ?? ''} onChange={e => updateKpi(i, 'unit', e.target.value)} disabled={!isAdmin()} placeholder="kg/t" style={{ margin: 0 }} />
                         </div>
                       </div>
                       
-                      <label style={{ display:'flex', gap:6, alignItems:'center', fontSize:11, cursor:'pointer', marginTop:4, color:'var(--text-secondary)' }}>
-                        <input type="checkbox" checked={k.inverse} onChange={e => updateKpi(i, 'inverse', e.target.checked)} disabled={!isAdmin()} />
-                        Inverter Regra de Cor (Valores menores que a meta são considerados Bons)
+                      <label style={{ display:'flex', gap:10, alignItems:'center', fontSize: 12, cursor:'pointer', marginTop: 12, color:'var(--text-secondary)', padding: '4px 8px' }}>
+                        <input type="checkbox" checked={k.inverse} onChange={e => updateKpi(i, 'inverse', e.target.checked)} disabled={!isAdmin()} style={{ width: 16, height: 16 }} />
+                        <span>Inverter regra cromática (valores baixos = positivos)</span>
                       </label>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                  
+                  {isAdmin() && (
+                    <button className="btn btn-ghost" onClick={addKpi} style={{ marginTop: 8, border: '1px dashed var(--border)', borderRadius: 12 }}>
+                      <Plus size={16}/> Criar Nova Métrica de Eficiência
+                    </button>
+                  )}
+                </div>
               </div>
-              {isAdmin() && (
-                <button className="btn btn-ghost btn-sm" onClick={addKpi} style={{ marginTop:16 }}>
-                  <Plus size={14}/> Criar Nova Métrica
-                </button>
-              )}
             </div>
-
-            {!isAdmin() && (
-              <p style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)', fontStyle:'italic' }}>
-                🔒 Apenas administradores podem alterar as configurações do dashboard.
-              </p>
-            )}
           </div>
         )}
       </div>
+
     </div>
   )
 }

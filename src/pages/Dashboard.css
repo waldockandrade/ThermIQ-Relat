@@ -1,46 +1,92 @@
-.gauges-grid {
+/* Dashboard Bento Grid Layout V2 */
+.dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-md);
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
 }
 
-@media (max-width: 1300px) { .gauges-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 900px)  { .gauges-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 500px)  { .gauges-grid { grid-template-columns: 1fr; } }
+.bento-kpi, .bento-accum {
+  grid-column: span 3;
+}
 
-.gauge-card {
+.bento-chart-mid {
+  grid-column: span 6;
+}
+
+.bento-chart-wide {
+  grid-column: span 12;
+}
+
+@media (max-width: 1440px) {
+  .bento-kpi, .bento-accum { grid-column: span 4; }
+}
+
+@media (max-width: 1024px) {
+  .bento-kpi, .bento-accum { grid-column: span 6; }
+  .bento-chart-mid { grid-column: span 12; }
+}
+
+@media (max-width: 640px) {
+  .dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+}
+
+/* Stat Card Industrial Stealth V2 */
+.stat-card.industrial {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
-.gauge-header {
+.stat-card.industrial:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-active);
+  box-shadow: var(--shadow-lg), 0 0 20px var(--glass-glow);
+}
+
+.stat-card.industrial::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--leaf));
+  opacity: 0.5;
+}
+
+.stat-value-mono {
+  font-family: 'Inter', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+
+.kpi-formula {
   display: flex;
   align-items: center;
   gap: 8px;
-  align-self: flex-start;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
 }
 
-.gauge-icon {
-  width: 28px; height: 28px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.kpi-indicator {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
-.gauge-svg-wrap {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.gauge-value {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: -12px;
-}

@@ -198,82 +198,66 @@ function ReportSelector({ reports, selected, onChange }) {
     </div>
   )
 }
-/* ─── TargetCard — Card horizontal de meta (Substitui o Gauge) ───────── */
+/* ─── TargetCard — Card horizontal de meta ───────── */
 function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
   const safeVal = (typeof value === 'number' && isFinite(value)) ? value : 0
   const hasMeta = typeof meta === 'number' && isFinite(meta)
   
-  // Decide a cor do status da barra dependendo do inverse (consumo vs geração)
   let statusColor = color 
   let statusText = ''
   
   if (hasMeta) {
     if (inverse) {
-      // Para consumo numérico (ex: kWh Consumido), o 'menor' (<= meta) é sucesso
-      statusColor = safeVal <= meta ? 'var(--leaf)' : 'var(--danger, #ef4444)'
-      statusText = safeVal <= meta ? 'Abaixo do teto (Bom)' : 'Acima do teto (Atenção)'
+      statusColor = safeVal <= meta ? 'var(--leaf)' : 'var(--danger)'
+      statusText = safeVal <= meta ? 'Eficiente' : 'Alerta'
     } else {
-      // Para geração (ex: kW Gerado), o 'maior' (>= meta) é sucesso
-      statusColor = safeVal >= meta ? 'var(--leaf)' : 'var(--warning, #eab308)'
-      statusText = safeVal >= meta ? 'Meta atingida!' : 'Abaixo da meta'
+      statusColor = safeVal >= meta ? 'var(--leaf)' : 'var(--warning)'
+      statusText = safeVal >= meta ? 'Meta Ok' : 'Abaixo'
     }
   }
 
-  // Ajuste elástico da calha visual da barra para suportar a barra inteira
   const maxVal = hasMeta ? Math.max(meta * 1.3, safeVal * 1.1) : (safeVal > 0 ? safeVal * 1.2 : 100)
   const valPct = Math.min((safeVal / maxVal) * 100, 100)
   const metaPct = hasMeta ? Math.min((meta / maxVal) * 100, 100) : 0
 
   return (
-    <div className="stat-card" style={{ padding: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-      {/* Cabeçalho */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ minWidth: 44, width: 44, height: 44, borderRadius: 'var(--radius-md)', background: `${color}18`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={20} style={{ color }} />
+    <div className="stat-card industrial bento-kpi">
+      <div className="card-header" style={{ border: 'none', padding: 0, marginBottom: 16 }}>
+        <div style={{ 
+          width: 36, height: 36, borderRadius: 10, 
+          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center' 
+        }}>
+          <Icon size={18} style={{ color: statusColor }} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {label}
+        {hasMeta && (
+          <div className="kpi-indicator" style={{ background: `${statusColor}15`, color: statusColor }}>
+            {statusText}
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-              {safeVal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
-              {unit}
-            </span>
-          </div>
+        )}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div className="stat-label">{label}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+          <span className="stat-value-mono" style={{ fontSize: 28, fontWeight: 800 }}>
+            {safeVal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+          </span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>{unit}</span>
         </div>
       </div>
 
-      {/* Tracker da Meta */}
       {hasMeta && (
-        <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: 8, fontWeight: 600 }}>
-            <span style={{ color: 'var(--text-muted)' }}>Meta: {meta.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</span>
-            <span style={{ color: statusColor }}>{statusText}</span>
+        <div style={{ marginTop: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Alvo: <span style={{ color: 'var(--text-secondary)' }}>{meta.toLocaleString('pt-BR')}</span></span>
+            <span style={{ color: statusColor, fontWeight: 800 }}>{Math.round((safeVal / meta) * 100)}%</span>
           </div>
-          
-          <div style={{ position: 'relative', height: 10, background: 'rgba(0,0,0,0.04)', borderRadius: 5, overflow: 'hidden' }}>
-             {/* Sombra demarcando limitador da meta na calha invisível */}
-             <div style={{
-                position: 'absolute', top: 0, bottom: 0, left: 0, width: `${metaPct}%`,
-                background: inverse ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.03)', 
-                borderRight: inverse ? 'none' : '1px solid rgba(0,0,0,0.1)'
-             }} />
-             
-             {/* Barra progressiva que pinta esticando conforme o value */}
+          <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
              <div style={{
                 position: 'absolute', top: 0, bottom: 0, left: 0, width: `${valPct}%`,
-                background: `linear-gradient(90deg, ${statusColor}cc, ${statusColor})`,
-                borderRadius: 5, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: `0 0 6px ${statusColor}44`
-             }} />
-             
-             {/* Traço divisor visível no alvo cravado */}
-             <div style={{
-                position: 'absolute', top: 0, bottom: 0, left: `${metaPct}%`, width: 2,
-                background: 'var(--text-primary)', transform: 'translateX(-50%)', opacity: 0.6
+                background: `linear-gradient(90deg, ${statusColor}44, ${statusColor})`,
+                borderRadius: 3, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)'
              }} />
           </div>
         </div>
@@ -281,63 +265,49 @@ function TargetCard({ label, value, unit, meta, color, icon: Icon, inverse }) {
     </div>
   )
 }
+
 
 /* ─── AccumCard — Card de variável quantitativa acumulada ── */
 function AccumCard({ label, value, unit, max, color, icon: Icon, reportCount }) {
   const pct = Math.min(Math.max((value || 0) / max, 0), 1)
-  const pctDisp = Math.round(pct * 100)
 
   return (
-    <div className="stat-card" style={{
-      display:'flex', flexDirection:'column', gap:12, padding:'var(--space-lg)',
-      borderTop: `3px solid ${color}`,
-    }}>
-      {/* Icon + label */}
-      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+    <div className="stat-card industrial bento-accum">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{
-          width:32, height:32, borderRadius:'var(--radius-sm)',
-          background:`${color}18`, border:`1px solid ${color}33`,
-          display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+          width: 36, height: 36, borderRadius: 10,
+          background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px solid ${color}33`
         }}>
-          <Icon size={16} style={{ color }} />
+          <Icon size={18} style={{ color }} />
         </div>
-        <span className="stat-label" style={{ textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</span>
+        <span className="stat-label">{label}</span>
       </div>
 
-      {/* Big value */}
-      <div style={{ lineHeight:1 }}>
-        <span style={{ fontSize:28, fontWeight:800, color:'var(--text-primary)' }}>
-          {typeof value === 'number' ? value.toLocaleString('pt-BR', { maximumFractionDigits:1 }) : '0'}
-        </span>
-        <span style={{ fontSize:'var(--text-sm)', color:'var(--text-muted)', marginLeft:6, fontWeight:500 }}>{unit}</span>
+      <div style={{ marginBottom: 20 }}>
+        <div className="stat-value-mono" style={{ fontSize: 28, fontWeight: 800 }}>
+          {typeof value === 'number' ? value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '0'}
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 600 }}>{unit}</span>
+        </div>
       </div>
 
-      {/* Progress bar */}
-      <div>
-        <div style={{ height:6, background:'rgba(0,0,0,0.07)', borderRadius:3, overflow:'hidden' }}>
+      <div style={{ marginTop: 'auto' }}>
+        <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden', marginBottom: 8 }}>
           <div style={{
-            height:'100%', width:`${pct*100}%`,
-            background: `linear-gradient(90deg, ${color}bb, ${color})`,
-            borderRadius:3,
-            transition:'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-            boxShadow: `0 0 8px ${color}55`,
+            height: '100%', width: `${pct * 100}%`,
+            background: `linear-gradient(90deg, ${color}88, ${color})`, 
+            borderRadius: 3, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)'
           }} />
         </div>
-        <div style={{ display:'flex', justifyContent:'space-between', marginTop:4, fontSize:'var(--text-xs)', color:'var(--text-muted)' }}>
-          <span>{pctDisp}% do referencial</span>
-          <span>ref: {max.toLocaleString('pt-BR')} {unit}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' }}>
+          <span>{Math.round(pct * 100)}% do operacional</span>
+          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Max: {max.toLocaleString('pt-BR')}</span>
         </div>
       </div>
-
-      {/* Rodapé */}
-      {reportCount !== undefined && (
-        <div style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)', borderTop:'1px solid var(--border)', paddingTop:8 }}>
-          {reportCount} relatório{reportCount !== 1 ? 's' : ''} considerado{reportCount !== 1 ? 's' : ''}
-        </div>
-      )}
     </div>
   )
 }
+
 
 /* ─── KPI Card ───────────────────────────────────── */
 function KPICard({ label, numerador, denominador, result, unit, numLabel, denLabel }) {
@@ -389,119 +359,70 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 /* ─── Gráfico individual de KPI ─────────────────── */
-function KPIChart({ title, unit, color, data, metaKey, metaVal, onMetaChange, emptyMsg }) {
+function KPIChart({ title, unit, color, data, metaVal, onMetaChange, emptyMsg, className }) {
   const hasData   = data.some(d => d.real !== null && d.real !== undefined)
   const vals      = data.filter(d => d.real !== null).map(d => d.real)
   const mean      = vals.length ? round(vals.reduce((a,b)=>a+b,0)/vals.length, 3) : null
-  const aboveMeta = mean !== null && metaVal !== null && mean > metaVal
-  const lineColor = metaVal !== null ? (aboveMeta ? '#ef4444' : '#22c55e') : color
-
-  // badges de stat
-  const statItems = [
-    mean !== null && { label:'Média', val: fmt(mean,3), color:'var(--text-primary)' },
-    vals.length > 0 && { label:'Mín', val: fmt(Math.min(...vals),3), color:'#3b82f6' },
-    vals.length > 0 && { label:'Máx', val: fmt(Math.max(...vals),3), color:'#f97316' },
-    (mean !== null && metaVal !== null) && {
-      label:'Δ Meta',
-      val: `${mean-metaVal > 0 ? '+' : ''}${fmt(mean-metaVal,3)}`,
-      color: aboveMeta ? 'var(--danger)' : 'var(--leaf-dark)'
-    },
-  ].filter(Boolean)
-
+  
   return (
-    <div className="card">
-      <div className="card-header" style={{ flexWrap:'wrap', gap:'var(--space-sm)', alignItems:'flex-start' }}>
-        <span className="card-title" style={{ fontSize:'var(--text-base)' }}>
-          <TrendingUp size={16} style={{ color }} /> {title}
-        </span>
-        {/* Meta input */}
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <label style={{ fontSize:'var(--text-xs)', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em', whiteSpace:'nowrap' }}>
-            <Target size={11}/> Meta
-          </label>
+    <div className={`card industrial ${className}`}>
+      <div className="card-header" style={{ border: 'none', marginBottom: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span className="card-title">
+            <TrendingUp size={16} style={{ color }} /> {title}
+          </span>
+          {mean !== null && (
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }} className="stat-value-mono">
+              {mean.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>{unit} (Média)</span>
+            </div>
+          )}
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: 10, border: '1px solid var(--border)' }}>
+          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)' }}>META ALVO</label>
           <input
             type="number" step="any"
+            className="cell-input"
             value={metaVal ?? ''}
             onChange={e => onMetaChange(e.target.value === '' ? null : parseFloat(e.target.value))}
-            placeholder="Ex: 1.5"
-            style={{ width:100, marginBottom:0 }}
+            style={{ width: 70, background: 'transparent', border: 'none', color: 'var(--accent)', fontWeight: 700, padding: 0 }}
           />
-          {metaVal !== null && <span style={{ fontSize:'var(--text-xs)', color:'var(--text-muted)' }}>{unit}</span>}
         </div>
       </div>
 
-      {/* Stat pills */}
-      {statItems.length > 0 && (
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:'var(--space-md)' }}>
-          {statItems.map(s => (
-            <div key={s.label} style={{
-              background:'var(--bg-surface)', border:'1px solid var(--border)',
-              borderRadius:'var(--radius-md)', padding:'6px 12px',
-            }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)' }}>{s.label}</div>
-              <div style={{ fontSize:'var(--text-sm)', fontWeight:700, color:s.color }}>{s.val}</div>
-            </div>
-          ))}
-          <div style={{
-            background:'var(--bg-surface)', border:'1px solid var(--border)',
-            borderRadius:'var(--radius-md)', padding:'6px 12px',
-          }}>
-            <div style={{ fontSize:10, color:'var(--text-muted)' }}>Relatórios</div>
-            <div style={{ fontSize:'var(--text-sm)', fontWeight:700, color:'var(--text-primary)' }}>{data.length}</div>
-          </div>
-        </div>
-      )}
-
       {!hasData ? (
-        <div className="empty-state" style={{ padding:'var(--space-lg)' }}>
-          <TrendingUp size={32} />
-          <p>{emptyMsg || 'Sem dados suficientes para calcular este indicador.'}</p>
+        <div className="empty-state" style={{ height: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <TrendingUp size={32} style={{ marginBottom: 12, opacity: 0.2 }} />
+          <p style={{ maxWidth: 300, margin: '0 auto' }}>{emptyMsg}</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={data} margin={{ top:8, right:24, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fill:'var(--text-muted)', fontSize:10 }}
-              axisLine={{ stroke:'var(--border)' }}
-              tickLine={false}
-              interval={Math.max(0, Math.floor(data.length / 12) - 1)}
-              angle={data.length > 8 ? -35 : 0}
-              textAnchor={data.length > 8 ? 'end' : 'middle'}
-              height={data.length > 8 ? 52 : 28}
-            />
-            <YAxis
-              tick={{ fill:'var(--text-muted)', fontSize:10 }}
+              tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={64}
-              unit={` ${unit}`}
-              tickFormatter={v => fmt(v, 2)}
+              dy={10}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend iconType="circle" wrapperStyle={{ fontSize:'11px', color:'var(--text-secondary)' }} />
+            <YAxis
+              tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={v => v.toLocaleString('pt-BR')}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
             {metaVal !== null && (
-              <ReferenceLine
-                y={metaVal}
-                stroke="rgba(249,115,22,0.5)"
-                strokeDasharray="6 3"
-                label={{ value:`Meta: ${fmt(metaVal,3)}`, fill:'var(--accent)', fontSize:10, position:'right' }}
-              />
-            )}
-            {metaVal !== null && (
-              <Line
-                type="monotone" dataKey="meta" name="Meta"
-                stroke="var(--accent)" strokeWidth={2} strokeDasharray="6 3"
-                dot={false} activeDot={{ r:3 }}
-              />
+              <ReferenceLine y={metaVal} stroke="var(--accent)" strokeDasharray="5 5" opacity={0.5} />
             )}
             <Line
-              type="monotone" dataKey="real" name="Real"
-              stroke={lineColor} strokeWidth={2.5}
-              dot={{ fill:lineColor, r:4, strokeWidth:2, stroke:'white' }}
-              activeDot={{ r:6, strokeWidth:2, stroke:'white' }}
-              connectNulls={false}
+              type="monotone" dataKey="real" name="Valor Real"
+              stroke={color} strokeWidth={3}
+              dot={{ fill: color, r: 4, strokeWidth: 2, stroke: 'var(--bg-card)' }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              animationDuration={1500}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -509,6 +430,7 @@ function KPIChart({ title, unit, color, data, metaKey, metaVal, onMetaChange, em
     </div>
   )
 }
+
 
 /* ══════════════════════════════════════════════════ */
 export default function Dashboard() {
@@ -716,7 +638,7 @@ export default function Dashboard() {
           SEÇÃO 1 — VARIÁVEIS QUANTITATIVAS (AccumCards)
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Variáveis Quantitativas — Acumulado dos Relatórios Selecionados</div>
-      <div className="grid-3" style={{ marginBottom:'var(--space-xl)', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))' }}>
+      <div className="dashboard-grid">
         {quantitativesData.map(q => {
           const IconComp = ICONS[q.iconName] || Box
           return (
@@ -733,7 +655,7 @@ export default function Dashboard() {
           )
         })}
         {quantitativesData.length === 0 && (
-          <p style={{ fontSize:'var(--text-sm)', color:'var(--text-muted)', padding:'var(--space-md)' }}>
+          <p style={{ gridColumn: 'span 12', fontSize:'var(--text-sm)', color:'var(--text-muted)', padding:'var(--space-md)' }}>
             Nenhum indicador quantitativo configurado. Adicione-os em Variáveis de Processo.
           </p>
         )}
@@ -743,7 +665,7 @@ export default function Dashboard() {
           SEÇÃO 2 — INDICADORES DE EFICIÊNCIA
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Métricas de Eficiência — Status das Metas</div>
-      <div className="grid-3" style={{ marginBottom:'var(--space-lg)' }}>
+      <div className="dashboard-grid">
         {customKPIData.map(k => (
           <TargetCard
             key={k.id}
@@ -757,7 +679,7 @@ export default function Dashboard() {
           />
         ))}
         {customKPIData.length === 0 && (
-          <p style={{ fontSize:'var(--text-sm)', color:'var(--text-muted)', padding:'var(--space-md)' }}>
+          <p style={{ gridColumn: 'span 12', fontSize:'var(--text-sm)', color:'var(--text-muted)', padding:'var(--space-md)' }}>
             Nenhum KPI configurado.
           </p>
         )}
@@ -767,7 +689,7 @@ export default function Dashboard() {
           SEÇÃO 2b — GRÁFICOS POR KPI (Meta vs. Real)
       ═══════════════════════════════════════════════ */}
       <div className="section-label">Evolução dos Indicadores por Relatório — Meta vs. Real</div>
-      <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-lg)', marginBottom:'var(--space-xl)' }}>
+      <div className="dashboard-grid">
         {customKPIData.map(k => (
           <KPIChart
             key={k.id}
@@ -778,9 +700,11 @@ export default function Dashboard() {
             metaVal={k.meta}
             onMetaChange={v => updateKPIMeta(k.id, v)}
             emptyMsg={`Lance relatórios com as variáveis atreladas a este indicador para visualizar a evolução matemática.`}
+            className="bento-chart-mid"
           />
         ))}
       </div>
+
 
       {/* ═══════════════════════════════════════════════
           SEÇÃO 3 — GRÁFICO VARIÁVEIS QUALITATIVAS

@@ -54,19 +54,24 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       <div className="sidebar-logo">
         {/* Flame + Leaf logo */}
         <div className="logo-icon">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Flame */}
-            <path d="M18 4 C18 4 10 12 10 20 C10 26 13.5 30 18 30 C22.5 30 26 26 26 20 C26 15 22 10 20 7 C20 7 20 13 17 15 C14 17 12 20 14 23 C14 23 11 21 11 17 C11 13 18 4 18 4Z"
-              fill="url(#flameGrad)" />
-            {/* Leaf */}
-            <path d="M16 22 C16 22 14 18 18 15 C22 12 24 14 24 14 C24 14 22 22 16 22Z"
-              fill="url(#leafGrad)" opacity="0.95"/>
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Rounded Square Frame */}
+            <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" strokeWidth="2.5" className="logo-frame" />
+            
+            {/* Flame Shape — Adjusted to match image closer */}
+            <path d="M16 8 C16 8 8 16 8 24 C8 30 11.5 34 16 34 C20.5 34 24 30 24 24 C24 19 20 14 18 11 C18 11 18 17 15 19 C12 21 10 24 12 27 C12 27 9 25 9 21 C9 17 16 8 16 8Z"
+              fill="url(#flameGrad)" className="logo-flame" />
+            
+            {/* Leaf Shape — Adjusted to overlap like the image */}
+            <path d="M18 26 C18 26 15 21 21 17 C27 13 31 16 31 16 C31 16 28 26 18 26Z"
+              fill="url(#leafGrad)" />
+              
             <defs>
-              <linearGradient id="flameGrad" x1="18" y1="4" x2="18" y2="30" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#fb923c"/>
+              <linearGradient id="flameGrad" x1="16" y1="8" x2="16" y2="34" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#f97316"/>
                 <stop offset="100%" stopColor="#ea6c10"/>
               </linearGradient>
-              <linearGradient id="leafGrad" x1="16" y1="23" x2="24" y2="13" gradientUnits="userSpaceOnUse">
+              <linearGradient id="leafGrad" x1="18" y1="28" x2="31" y2="15" gradientUnits="userSpaceOnUse">
                 <stop offset="0%" stopColor="#4ade80"/>
                 <stop offset="100%" stopColor="#16a34a"/>
               </linearGradient>
