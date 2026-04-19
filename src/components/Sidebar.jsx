@@ -25,7 +25,8 @@ const NAV_ITEMS = [
   { path: '/dashboard',   label: 'Dashboard',              icon: LayoutDashboard, adminOnly: false },
   { path: '/paradas',     label: 'Paradas de Processo',    icon: PauseCircle,     adminOnly: false },
   { path: '/manutencao',  label: 'Notas de Manutenção',   icon: Wrench,          adminOnly: false },
-  { path: '/banco',       label: 'Banco de Relatórios',   icon: Database,        adminOnly: false },
+  { path: '/banco',       label: 'Banco de Relatórios',   icon: FileText,        adminOnly: false },
+  { path: '/banco/dados', label: 'Dados Operacionais',    icon: BarChart3,       adminOnly: false },
   { path: '/usuarios',    label: 'Gestão de Usuários',    icon: Users,           adminOnly: true  },
 ]
 

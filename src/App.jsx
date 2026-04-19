@@ -49,6 +49,7 @@ function AppLayout() {
             <Route path="/paradas"               element={<Paradas />} />
             <Route path="/manutencao"            element={<Manutencao />} />
             <Route path="/banco"                 element={<BancoRelatorios />} />
+            <Route path="/banco/dados"           element={<BancoDados />} />
             <Route path="/usuarios"              element={<Usuarios />} />
             <Route path="*"                      element={<Navigate to="/variaveis" replace />} />
           </Routes>
