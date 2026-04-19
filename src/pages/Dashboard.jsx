@@ -12,90 +12,25 @@ import {
 
 const ICONS = {
   Droplets, Wind, Zap, Flame, Activity, TrendingUp, Box, Battery, Cpu, Filter, Sun, Thermometer, Target, Info
-}
+import { 
+  fmt, 
+  fmtDate, 
+  classifyVar, 
+  getConversion as convFactor, 
+  aggregateReports as deltaConvert,
+  matchVar
+} from '../utils/metrics'
+
 import './Dashboard.css'
 
 /* ─── Helpers ────────────────────────────────────── */
-function fmtDate(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })
-}
 function round(n, dec = 2) {
   return isFinite(n) && n !== null ? Number(n.toFixed(dec)) : null
 }
-function fmt(val, dec = 2) {
-  if (val === null || val === undefined || !isFinite(val)) return '—'
-  return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
-}
 
-/* Identifica variável por nome */
-function matchVar(name, ...terms) {
-  const n = name.toLowerCase()
-  return terms.some(t => n.includes(t))
-}
-
-/* Fator de conversão entre unidades (retorna 1 se não souber) */
-function convFactor(fromUnit, toUnit) {
-  if (!fromUnit || !toUnit) return 1
-  const f = fromUnit.trim().toLowerCase()
-  const t = toUnit.trim().toLowerCase()
-  if (f === t) return 1
-  
-  // Apenas conversões solicitadas:
-  // 1. MW (ou MWh) para kW (ou kWh)
-  const MEGA_ENG = ['mw', 'mwh']
-  const KILO_ENG = ['kw', 'kwh']
-  if (MEGA_ENG.includes(f) && KILO_ENG.includes(t)) return 1000
-  
-  // 2. Vapor em Ton para Kg
-  const TON_SET = ['ton','t','t/h','ton/h']
-  const KG_SET  = ['kg','kg/h']
-  if (TON_SET.includes(f) && KG_SET.includes(t)) return 1000
-  
-  return 1
-}
-
-/* Grupos de unidades por grandeza física */
-const MASS_UNITS   = ['ton','t','t/h','ton/h','kg','kg/h']
-const ENERGY_UNITS = ['mw','kwh','kw','mwh']
-const VOL_UNITS    = ['m³','m³/h','m3','m3/h']
-
-/* Retorna o grupo permitido para uma unidade alvo (null = sem restrição) */
-function allowedGroup(targetUnit) {
-  const t = (targetUnit || '').trim().toLowerCase()
-  if (MASS_UNITS.includes(t))   return MASS_UNITS
-  if (ENERGY_UNITS.includes(t)) return ENERGY_UNITS
-  if (VOL_UNITS.includes(t))    return VOL_UNITS
-  return null
-}
-
-/* Calcula delta de variáveis já convertidas para a unidade alvo.
-   Só soma variáveis cuja unidade pertence ao mesmo grupo físico do alvo
-   (evita somar temperatura, pressão etc. que contêm 'vapor' no nome). */
-function deltaConvert(activeReports, allVars, targetUnit, ...terms) {
-  const allowed = allowedGroup(targetUnit)
-  let acc = 0
-  activeReports.forEach(rep => {
-    allVars.forEach(v => {
-      if (!matchVar(v.name, ...terms)) return
-      // Filtra pelo grupo de unidade física
-      if (allowed && !allowed.includes((v.unit || '').trim().toLowerCase())) return
-      const e = rep.lancamentos?.[v.id]
-      if (!e) return
-      const d = parseFloat(e.tot_final || 0) - parseFloat(e.tot_inicial || 0)
-      if (!isFinite(d)) return
-      acc += d * convFactor(v.unit, targetUnit)
-    })
-  })
-  return acc
-}
-
-/* Separa variáveis em quantitativas (totalizadores) e qualitativas (leituras instantâneas) */
 function classifyVars(allVars) {
-  const QUANTITATIVE_TERMS = ['vazão','producao','produção','consumo','energia','cavaco','biomassa','vapor','água','agua','alimentação','alimentacao']
-  const qualitative = allVars.filter(v => !QUANTITATIVE_TERMS.some(t => v.name.toLowerCase().includes(t)))
-  const quantitative = allVars.filter(v => QUANTITATIVE_TERMS.some(t => v.name.toLowerCase().includes(t)))
-  // Se não separou bem, todos são qualitativas
+  const qualitative = allVars.filter(v => !classifyVar(v))
+  const quantitative = allVars.filter(v => classifyVar(v))
   if (qualitative.length === 0) return { qualitative: allVars, quantitative: [] }
   return { qualitative, quantitative }
 }

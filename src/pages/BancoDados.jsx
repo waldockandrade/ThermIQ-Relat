@@ -10,39 +10,25 @@ import {
   X, 
   ArrowRight,
   TrendingUp,
+import { 
+  fmt, 
+  classifyVar, 
+  getConversion, 
+  processReportData 
+} from '../utils/metrics'
+
+import { 
+  Database, 
+  BarChart3, 
+  Search, 
+  Calendar, 
+  Filter, 
+  Download, 
+  X, 
+  ArrowRight,
+  TrendingUp,
   Activity
 } from 'lucide-react'
-
-/* ─── Helpers ────────────────────────────────────── */
-function fmt(val, dec = 2) {
-  if (val === null || val === undefined || !isFinite(val)) return '—'
-  return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
-}
-
-function classifyVar(v) {
-  const nm = v.name.toLowerCase()
-  const QUANTITATIVE_TERMS = ['vazão','producao','produção','consumo','energia','cavaco','biomassa','vapor','água','agua','alimentação','alimentacao']
-  return QUANTITATIVE_TERMS.some(t => nm.includes(t))
-}
-
-const UNITS_MASS = ['ton','t','t/h','ton/h','kg','kg/h']
-const UNITS_ENERGY = ['mw','kwh','kw','mwh']
-const UNITS_VOL = ['m³','m³/h']
-
-function getConversion(from, to) {
-  if (!from || !to || from === to) return 1
-  const f = from.toLowerCase().trim()
-  const t = to.toLowerCase().trim()
-  if (UNITS_ENERGY.includes(f) && UNITS_ENERGY.includes(t)) {
-    if ((f === 'mw' || f === 'mwh') && (t === 'kw' || t === 'kwh')) return 1000
-    if ((f === 'kw' || f === 'kwh') && (t === 'mw' || t === 'mwh')) return 0.001
-  }
-  if (UNITS_MASS.includes(f) && UNITS_MASS.includes(t)) {
-    if (f.startsWith('t') && t.startsWith('k')) return 1000
-    if (f.startsWith('k') && t.startsWith('t')) return 0.001
-  }
-  return 1
-}
 
 export default function BancoDados() {
   const { reports, getAllVariables, dashboardConfig } = useAppData()
@@ -102,72 +88,7 @@ export default function BancoDados() {
 
   // Cálculo de valores por linha (relatório)
   const rows = useMemo(() => {
-    return filteredReports.map(rep => {
-      const data = { 
-        id: rep.id, 
-        info: rep.turnoInfo, 
-        criadoPor: rep.criadoPor,
-        vals: {} 
-      }
-
-      // 1. Variáveis
-      allVars.forEach(v => {
-        const entries = rep.lancamentos?.[v.id]
-        if (!entries) return
-        
-        if (classifyVar(v)) {
-          const delta = parseFloat(entries.tot_final || 0) - parseFloat(entries.tot_inicial || 0)
-          data.vals[v.id] = isFinite(delta) ? delta : null
-        } else {
-          // Média dos slots
-          const slots = Object.values(entries.slots || {}).map(parseFloat).filter(isFinite)
-          if (slots.length > 0) {
-            data.vals[v.id] = slots.reduce((a, b) => a + b, 0) / slots.length
-          }
-        }
-      })
-
-      // 2. KPIs
-      customKPIs.forEach(k => {
-        const vNum = allVars.find(v => v.id === k.numVarId)
-        const vDen = allVars.find(v => v.id === k.denVarId)
-        if (!vNum || !vDen) return
-
-        let valNum = 0
-        let valDen = 0
-
-        // Numerador
-        const eN = rep.lancamentos?.[k.numVarId]
-        if (eN) {
-          if (classifyVar(vNum)) valNum = (parseFloat(eN.tot_final || 0) - parseFloat(eN.tot_inicial || 0))
-          else {
-            const s = Object.values(eN.slots || {}).map(parseFloat).filter(isFinite)
-            valNum = s.length > 0 ? s.reduce((a,b)=>a+b,0)/s.length : 0
-          }
-        }
-
-        // Denominador
-        const eD = rep.lancamentos?.[k.denVarId]
-        if (eD) {
-          if (classifyVar(vDen)) valDen = (parseFloat(eD.tot_final || 0) - parseFloat(eD.tot_inicial || 0))
-          else {
-            const s = Object.values(eD.slots || {}).map(parseFloat).filter(isFinite)
-            valDen = s.length > 0 ? s.reduce((a,b)=>a+b,0)/s.length : 0
-          }
-        }
-
-        valNum *= (k.numFactor || 1)
-        valDen *= (k.denFactor || 1)
-
-        if (valDen > 0) {
-          data.vals[k.id] = valNum / valDen
-        } else {
-          data.vals[k.id] = null
-        }
-      })
-
-      return data
-    })
+    return filteredReports.map(rep => processReportData(rep, allVars, customKPIs))
   }, [filteredReports, allVars, customKPIs])
 
   // Cálculo de Totais / Médias no rodapé

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AppDataContext = createContext(null)
@@ -131,56 +131,50 @@ export function AppDataProvider({ children }) {
     loadData()
   }, [])
 
-  // Auto-save mechanisms with Supabase (run on state change)
-  useEffect(() => { 
-    async function sync() {
-      if (isLoaded && supabase) {
-        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_categories', data: categories })
-        if (error) console.error("Erro ao sincronizar categorias:", error.message)
-      }
-    }
-    sync()
-  }, [categories, isLoaded])
+  // --- Unified Sync Engine (Debounce) ---
+  const syncTimerRef = useRef(null)
+  const isInitialLoad = useRef(true)
 
-  useEffect(() => { 
-    async function sync() {
-      if (isLoaded && supabase) {
-        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_reports', data: reports })
-        if (error) console.error("Erro ao sincronizar relatórios:", error.message)
-      }
+  useEffect(() => {
+    // Evita rodar no carregamento inicial antes dos dados reais virem do Supabase
+    if (!isLoaded) return
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false
+      return
     }
-    sync()
-  }, [reports, isLoaded])
 
-  useEffect(() => { 
-    async function sync() {
-      if (isLoaded && supabase) {
-        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_downtimes', data: downtimes })
-        if (error) console.error("Erro ao sincronizar paradas:", error.message)
-      }
-    }
-    sync()
-  }, [downtimes, isLoaded])
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
 
-  useEffect(() => { 
-    async function sync() {
-      if (isLoaded && supabase) {
-        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_maintenances', data: maintenances })
-        if (error) console.error("Erro ao sincronizar manutenções:", error.message)
-      }
-    }
-    sync()
-  }, [maintenances, isLoaded])
+    syncTimerRef.current = setTimeout(async () => {
+      if (!supabase) return
+      
+      console.log("🔄 Sincronizando dados com Supabase...")
+      
+      const syncTasks = [
+        { id: 'thermiq_categories', data: categories },
+        { id: 'thermiq_reports', data: reports },
+        { id: 'thermiq_downtimes', data: downtimes },
+        { id: 'thermiq_maintenances', data: maintenances },
+        { id: 'thermiq_dashboard_config', data: dashboardConfig }
+      ]
 
-  useEffect(() => { 
-    async function sync() {
-      if (isLoaded && supabase) {
-        const { error } = await supabase.from('app_data').upsert({ id: 'thermiq_dashboard_config', data: dashboardConfig })
-        if (error) console.error("Erro ao sincronizar config do painel:", error.message)
+      try {
+        const results = await Promise.all(
+          syncTasks.map(t => supabase.from('app_data').upsert({ id: t.id, data: t.data }))
+        )
+        const errors = results.filter(r => r.error)
+        if (errors.length > 0) {
+          console.error(`❌ Erro em ${errors.length} tarefas de sincronização:`, errors)
+        } else {
+          console.log("✅ Dados sincronizados com sucesso.")
+        }
+      } catch (err) {
+        console.error("❌ Erro fatal na sincronização:", err)
       }
-    }
-    sync()
-  }, [dashboardConfig, isLoaded])
+    }, 1500) // 1.5s de debounce
+
+    return () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current) }
+  }, [categories, reports, downtimes, maintenances, dashboardConfig, isLoaded])
 
   /* ---- CATEGORIES / VARIABLES ---- */
   function addCategory(name) {

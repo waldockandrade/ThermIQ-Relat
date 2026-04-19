@@ -113,7 +113,7 @@ export default function Lancamento() {
 
   /* ── Helpers de Combustível ── */
   function addCombustivel() {
-    setCombustiveis(prev => [...prev, { id: Date.now(), mistura: '', umidade: '' }])
+    setCombustiveis(prev => [...prev, { id: crypto.randomUUID(), mistura: '', umidade: '' }])
   }
   function removeCombustivel(id) {
     setCombustiveis(prev => prev.filter(c => c.id !== id))
@@ -124,7 +124,7 @@ export default function Lancamento() {
 
   /* ── Helpers de Paradas ── */
   function addLocalParada() {
-    setLocalParadas(prev => [...prev, { id: Date.now(), inicio: '', fim: '', tipo: 'Programada', descricao: '' }])
+    setLocalParadas(prev => [...prev, { id: crypto.randomUUID(), inicio: '', fim: '', tipo: 'Programada', descricao: '' }])
   }
   function removeLocalParada(id) {
     setLocalParadas(prev => prev.filter(p => p.id !== id))
@@ -135,7 +135,7 @@ export default function Lancamento() {
 
   /* ── Helpers de Notas ── */
   function addLocalNota() {
-    setLocalNotas(prev => [...prev, { id: Date.now(), numNota: '', descricao: '', centro: 'MEC-GER', prioridade: 'Média' }])
+    setLocalNotas(prev => [...prev, { id: crypto.randomUUID(), numNota: '', descricao: '', centro: 'MEC-GER', prioridade: 'Média' }])
   }
   function removeLocalNota(id) {
     setLocalNotas(prev => prev.filter(n => n.id !== id))
@@ -176,6 +176,17 @@ export default function Lancamento() {
   const { addDowntime, addMaintenance } = useAppData()
 
   function handleSave() {
+    // Validação extra de deltas negativos
+    const invalidVars = selVars.filter(v => {
+      const e = values[v.id]
+      return parseFloat(e.tot_final || 0) < parseFloat(e.tot_inicial || 0)
+    })
+
+    if (invalidVars.length > 0) {
+      alert(`Erro de Integridade: As seguintes variáveis possuem Total Final menor que o Inicial: \n\n${invalidVars.map(v => v.name).join('\n')}\n\nPor favor, corrija antes de salvar.`)
+      return
+    }
+
     const reportDate = draft.turnoInfo.data
     const reportTurno = draft.turnoInfo.turno
     const solicitante = user?.name || 'Operador'
