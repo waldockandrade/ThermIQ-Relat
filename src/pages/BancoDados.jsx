@@ -10,25 +10,15 @@ import {
   X, 
   ArrowRight,
   TrendingUp,
+  Activity
+} from 'lucide-react'
+
 import { 
   fmt, 
   classifyVar, 
   getConversion, 
   processReportData 
 } from '../utils/metrics'
-
-import { 
-  Database, 
-  BarChart3, 
-  Search, 
-  Calendar, 
-  Filter, 
-  Download, 
-  X, 
-  ArrowRight,
-  TrendingUp,
-  Activity
-} from 'lucide-react'
 
 export default function BancoDados() {
   const { reports, getAllVariables, dashboardConfig } = useAppData()
