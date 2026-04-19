@@ -12,6 +12,7 @@ import {
 
 const ICONS = {
   Droplets, Wind, Zap, Flame, Activity, TrendingUp, Box, Battery, Cpu, Filter, Sun, Thermometer, Target, Info
+}
 import { 
   fmt, 
   fmtDate, 
