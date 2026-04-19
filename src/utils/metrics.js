@@ -124,3 +124,8 @@ export function fmt(val, dec = 2) {
   if (val === null || val === undefined || !isFinite(val)) return '—'
   return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 }
+
+export function fmtDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })
+}
