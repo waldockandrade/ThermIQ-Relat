@@ -250,8 +250,7 @@ export default function BancoDados() {
               <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             </div>
           </div>
-            </div>
-          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
             <label style={{ fontSize: 11, marginBottom: 4 }}>Visualizar no Rodapé</label>
             <div className="btn-group" style={{ display: 'flex', gap: 2, background: 'var(--bg-surface)', padding: 2, borderRadius: 6, border: '1px solid var(--border)' }}>
