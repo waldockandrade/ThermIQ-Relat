@@ -55,6 +55,7 @@ export default function BancoDados() {
   const [filterTurno, setFilterTurno] = useState('Todos')
   const [filterSetor, setFilterSetor] = useState('Todos')
   const [searchTerm, setSearchTerm]   = useState('')
+  const [footerMode, setFooterMode]   = useState('both') // 'sum', 'avg', 'both'
 
   // Relatórios filtrados
   const filteredReports = useMemo(() => {
@@ -249,7 +250,32 @@ export default function BancoDados() {
               <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             </div>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={() => { setDateStart(''); setDateEnd(''); setFilterTurno('Todos'); setFilterSetor('Todos'); setSearchTerm(''); }}>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
+            <label style={{ fontSize: 11, marginBottom: 4 }}>Visualizar no Rodapé</label>
+            <div className="btn-group" style={{ display: 'flex', gap: 2, background: 'var(--bg-surface)', padding: 2, borderRadius: 6, border: '1px solid var(--border)' }}>
+              {[
+                { id: 'sum', label: 'Soma' },
+                { id: 'avg', label: 'Média' },
+                { id: 'both', label: 'Ambos' }
+              ].map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setFooterMode(m.id)}
+                  style={{
+                    flex: 1, padding: '4px 8px', fontSize: 10, border: 'none', borderRadius: 4, cursor: 'pointer',
+                    background: footerMode === m.id ? 'var(--accent)' : 'transparent',
+                    color: footerMode === m.id ? 'white' : 'var(--text-muted)',
+                    fontWeight: 700, transition: 'all 0.2s'
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setDateStart(''); setDateEnd(''); setFilterTurno('Todos'); setFilterSetor('Todos'); setSearchTerm(''); setFooterMode('both'); }}>
             <X size={14}/> Limpar
           </button>
         </div>
@@ -315,28 +341,32 @@ export default function BancoDados() {
             </tbody>
             {rows.length > 0 && (
               <tfoot style={{ position: 'sticky', bottom: 0, zIndex: 10, background: 'var(--bg-card)' }}>
-                {/* Linha de Totais (Soma para Quantitativos) */}
-                <tr style={{ background: 'var(--bg-surface)', fontWeight: 700 }}>
-                  <td colSpan={4} style={{ border: '1px solid var(--border)', textAlign: 'right', padding: '10px 16px', fontSize: 11 }}>
-                    SOMA TOTAL:
-                  </td>
-                  {tableColumns.map(col => (
-                    <td key={`sum-${col.id}`} style={{ border: '1px solid var(--border)', textAlign: 'center', fontSize: 13, color: col.isQuantitative ? 'var(--leaf-dark)' : 'var(--text-muted)' }}>
-                      {col.isQuantitative ? fmt(footerStats[col.id].sum, 1) : '—'}
+                {/* Linha de Totais (Soma) */}
+                {(footerMode === 'sum' || footerMode === 'both') && (
+                  <tr style={{ background: 'var(--bg-surface)', fontWeight: 700 }}>
+                    <td colSpan={4} style={{ border: '1px solid var(--border)', textAlign: 'right', padding: '10px 16px', fontSize: 11 }}>
+                      SOMA TOTAL DO PERÍODO:
                     </td>
-                  ))}
-                </tr>
+                    {tableColumns.map(col => (
+                      <td key={`sum-${col.id}`} style={{ border: '1px solid var(--border)', textAlign: 'center', fontSize: 13, color: 'var(--leaf-dark)' }}>
+                        {fmt(footerStats[col.id].sum, col.type === 'kpi' ? 3 : 1)}
+                      </td>
+                    ))}
+                  </tr>
+                )}
                 {/* Linha de Médias */}
-                <tr style={{ background: 'var(--bg-card)', fontWeight: 700 }}>
-                  <td colSpan={4} style={{ border: '1px solid var(--border)', textAlign: 'right', padding: '10px 16px', fontSize: 11 }}>
-                    MÉDIA DO PERÍODO:
-                  </td>
-                  {tableColumns.map(col => (
-                    <td key={`avg-${col.id}`} style={{ border: '1px solid var(--border)', textAlign: 'center', fontSize: 13, color: col.type === 'kpi' ? 'var(--accent-dark)' : 'var(--text-primary)' }}>
-                      {fmt(footerStats[col.id].avg, col.type === 'kpi' ? 3 : 1)}
+                {(footerMode === 'avg' || footerMode === 'both') && (
+                  <tr style={{ background: 'var(--bg-card)', fontWeight: 700 }}>
+                    <td colSpan={4} style={{ border: '1px solid var(--border)', textAlign: 'right', padding: '10px 16px', fontSize: 11 }}>
+                      MÉDIA DO PERÍODO:
                     </td>
-                  ))}
-                </tr>
+                    {tableColumns.map(col => (
+                      <td key={`avg-${col.id}`} style={{ border: '1px solid var(--border)', textAlign: 'center', fontSize: 13, color: col.type === 'kpi' ? 'var(--accent-dark)' : 'var(--text-primary)' }}>
+                        {fmt(footerStats[col.id].avg, col.type === 'kpi' ? 3 : 1)}
+                      </td>
+                    ))}
+                  </tr>
+                )}
               </tfoot>
             )}
           </table>
