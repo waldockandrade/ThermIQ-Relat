@@ -1,7 +1,17 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import ReactDOM from 'react-dom'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
+import { 
+  fmt, 
+  fmtDate, 
+  calcDuration, 
+  matchVar, 
+  getConversion as convFactor,
+  MASS_UNITS,
+  ENERGY_UNITS,
+  VOL_UNITS
+} from '../utils/metrics'
+
 import {
   FileText, Eye, Trash2, X, Download, Mail,
   Zap, Droplets, Wind, Activity, Flame,
@@ -280,42 +290,7 @@ function delta(lans, varId) {
   return round(f - i, 2)
 }
 
-function fmtDate(d) {
-  if (!d) return '—'
-  const [y, m, dd] = d.split('-')
-  return `${dd}/${m}/${y}`
-}
-
-function matchVar(name, ...terms) {
-  const n = name.toLowerCase()
-  return terms.some(t => n.includes(t))
-}
-
-/* Grupos de unidades por grandeza física */
-const MASS_UNITS   = ['ton','t','t/h','ton/h','kg','kg/h']
-const ENERGY_UNITS = ['mw','kwh','kw','mwh']
-const VOL_UNITS    = ['m³','m³/h','m3','m3/h']
-
-/* Fator de conversão entre unidades */
-function convFactor(fromUnit, toUnit) {
-  if (!fromUnit || !toUnit) return 1
-  const f = fromUnit.trim().toLowerCase()
-  const t = toUnit.trim().toLowerCase()
-  if (f === t) return 1
-  
-  // Apenas conversões solicitadas:
-  // 1. MW (ou MWh) para kW (ou kWh)
-  const MEGA_ENG = ['mw', 'mwh']
-  const KILO_ENG = ['kw', 'kwh']
-  if (MEGA_ENG.includes(f) && KILO_ENG.includes(t)) return 1000
-  
-  // 2. Vapor em Ton para Kg
-  const TON_SET = ['ton','t','t/h','ton/h']
-  const KG_SET  = ['kg','kg/h']
-  if (TON_SET.includes(f) && KG_SET.includes(t)) return 1000
-  
-  return 1
-}
+/* ─── Mini KPI Badge ──────────────────────────── */
 
 /* ─── Mini KPI Badge ──────────────────────────── */
 function KPIBadge({ label, value, unit, color }) {
@@ -507,7 +482,10 @@ Consumo Cavaco:   ${kpis.dCav  ?? '—'} m³
 ${diario || '(não preenchido)'}
 
 ── PARADAS (${repParadas.length}) ──
-${repParadas.map(p => `  ${p.inicio}–${p.fim}  [${p.tipo}]  ${p.descricao}`).join('\n') || '  Nenhuma parada registrada'}
+${repParadas.map(p => {
+  const d = calcDuration(p.inicio, p.fim)
+  return `  ${p.inicio}–${p.fim} (${d} min)  [${p.tipo}]  ${p.descricao}`
+}).join('\n') || '  Nenhuma parada registrada'}
 
 ── NOTAS DE MANUTENÇÃO (${repNotas.length}) ──
 ${repNotas.map(n => `  [${n.prioridade}] ${n.nome} — ${n.descricao}`).join('\n') || '  Nenhuma nota registrada'}
@@ -787,7 +765,9 @@ Enviado via ThermIQ Relat
                         {p.tipo}
                       </span>
                       <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', flex: 1 }}>{p.descricao || '—'}</span>
-                      {p.duracao && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{p.duracao} min</span>}
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        {calcDuration(p.inicio, p.fim)} min
+                      </span>
                     </div>
                   ))}
                 </div>

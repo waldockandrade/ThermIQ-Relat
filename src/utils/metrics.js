@@ -13,9 +13,9 @@ export function classifyVar(v) {
   return QUANTITATIVE_TERMS.some(t => nm.includes(t))
 }
 
-const UNITS_MASS = ['ton', 't', 't/h', 'ton/h', 'kg', 'kg/h']
-const UNITS_ENERGY = ['mw', 'kwh', 'kw', 'mwh']
-const UNITS_VOL = ['m³', 'm³/h', 'm3', 'm3/h']
+export const MASS_UNITS   = ['ton', 't', 't/h', 'ton/h', 'kg', 'kg/h']
+export const ENERGY_UNITS = ['mw', 'kwh', 'kw', 'mwh']
+export const VOL_UNITS    = ['m³', 'm³/h', 'm3', 'm3/h']
 
 export function getConversion(from, to) {
   if (!from || !to) return 1
@@ -24,13 +24,13 @@ export function getConversion(from, to) {
   if (f === t) return 1
 
   // Energia
-  if (UNITS_ENERGY.includes(f) && UNITS_ENERGY.includes(t)) {
+  if (ENERGY_UNITS.includes(f) && ENERGY_UNITS.includes(t)) {
     if ((f === 'mw' || f === 'mwh') && (t === 'kw' || t === 'kwh')) return 1000
     if ((f === 'kw' || f === 'kwh') && (t === 'mw' || t === 'mwh')) return 0.001
   }
 
   // Massa / Volume (Métrica básica)
-  if (UNITS_MASS.includes(f) && UNITS_MASS.includes(t)) {
+  if (MASS_UNITS.includes(f) && MASS_UNITS.includes(t)) {
     if (f.startsWith('t') && t.startsWith('k')) return 1000
     if (f.startsWith('k') && t.startsWith('t')) return 0.001
   }
@@ -114,9 +114,9 @@ export function matchVar(name, ...terms) {
 
 export function allowedGroup(targetUnit) {
   const t = (targetUnit || '').trim().toLowerCase()
-  if (UNITS_MASS.includes(t))   return UNITS_MASS
-  if (ENERGY_UNITS.includes(t)) return UNITS_ENERGY
-  if (UNITS_VOL.includes(t))    return UNITS_VOL
+  if (MASS_UNITS.includes(t))   return MASS_UNITS
+  if (ENERGY_UNITS.includes(t)) return ENERGY_UNITS
+  if (VOL_UNITS.includes(t))    return VOL_UNITS
   return null
 }
 
@@ -128,4 +128,23 @@ export function fmt(val, dec = 2) {
 export function fmtDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })
+}
+
+export function calcDuration(start, end) {
+  if (!start || !end) return 0
+  try {
+    const [h1, m1] = start.split(':').map(Number)
+    const [h2, m2] = end.split(':').map(Number)
+    if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0
+    
+    let t1 = h1 * 60 + m1
+    let t2 = h2 * 60 + m2
+    
+    // Se t2 < t1, assumimos que cruzou a meia-noite
+    if (t2 < t1) t2 += 24 * 60
+    
+    return t2 - t1
+  } catch (e) {
+    return 0
+  }
 }

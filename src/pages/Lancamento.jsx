@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
 import { Save, AlertCircle, Zap, BookOpen, Plus, Trash2 } from 'lucide-react'
+import { calcDuration } from '../utils/metrics'
 
 const MAX_DIARIO = 3000
 
@@ -375,6 +376,9 @@ export default function Lancamento() {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input type="time" value={p.inicio} onChange={e => updateLocalParada(p.id, 'inicio', e.target.value)} style={{ width: 85, fontSize: 12 }} />
                   <input type="time" value={p.fim} onChange={e => updateLocalParada(p.id, 'fim', e.target.value)} style={{ width: 85, fontSize: 12 }} />
+                  <div style={{ padding: '0 8px', display: 'flex', alignItems: 'center', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 4, fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', minWidth: 50 }}>
+                    {calcDuration(p.inicio, p.fim)} min
+                  </div>
                   <select value={p.tipo} onChange={e => updateLocalParada(p.id, 'tipo', e.target.value)} style={{ fontSize: 12, flex: 1 }}>
                     {['Programada', 'Elétrica', 'Mecânica', 'Operacional', 'Processo'].map(t => <option key={t}>{t}</option>)}
                   </select>
