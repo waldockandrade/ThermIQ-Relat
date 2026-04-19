@@ -12,6 +12,7 @@ import Dashboard     from './pages/Dashboard'
 import Paradas       from './pages/Paradas'
 import Manutencao    from './pages/Manutencao'
 import BancoRelatorios from './pages/BancoRelatorios'
+import BancoDados from './pages/BancoDados'
 import Usuarios      from './pages/Usuarios'
 
 function ProtectedRoute({ children }) {
