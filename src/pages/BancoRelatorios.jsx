@@ -428,6 +428,10 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
   const repNotas   = maintenances.filter(m => m.data === repDate)
   const selVars    = allVars.filter(v => selectedVarIds?.includes(v.id))
 
+  const [emailDestino, setEmailDestino] = useState('')
+  const [enviandoEmail, setEnviandoEmail] = useState(false)
+  const [envioStatus, setEnvioStatus] = useState(null) // 'success' | 'error'
+
   /* ── KPI calculation ── */
   // Usa filtro por unidade física para evitar somar temperatura/pressão que contenham 'vapor' no nome
   const kpis = useMemo(() => {
@@ -576,6 +580,117 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
     }
   }
 
+  async function handleSendEmail() {
+    if (!emailDestino || !emailDestino.includes('@')) {
+      alert('Por favor, insira um e-mail válido.')
+      return
+    }
+
+    setEnviandoEmail(true)
+    setEnvioStatus(null)
+
+    try {
+      // 1. GERAR O PDF EM MEMÓRIA
+      const headerEl = document.getElementById('pdf-header')
+      const summaryEl = document.getElementById('pdf-summary')
+      const detailsEl = document.getElementById('pdf-details')
+      
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const margin = 12
+      const contentWidth = pdfWidth - (margin * 2)
+      const footerH = 15
+
+      const addFooter = (p, n, total) => {
+        p.setFontSize(8)
+        p.setTextColor(150)
+        const now = new Date().toLocaleString('pt-BR')
+        const y = pdfHeight - margin
+        p.setDrawColor(220)
+        p.line(margin, y - 6, pdfWidth - margin, y - 6)
+        p.text(`ThermIQ Relat — Inteligência Operacional`, margin, y)
+        p.text(`Gerado em: ${now}`, pdfWidth / 2, y, { align: 'center' })
+        p.text(`Página ${n} de ${total}`, pdfWidth - margin, y, { align: 'right' })
+      }
+
+      const canvasH = await html2canvas(headerEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgH = canvasH.toDataURL('image/png')
+      const headerH = (canvasH.height * contentWidth) / canvasH.width
+      const availableH = pdfHeight - (margin * 2) - headerH - footerH
+
+      const canvasS = await html2canvas(summaryEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgS = canvasS.toDataURL('image/png')
+      const imgSH = (canvasS.height * contentWidth) / canvasS.width
+
+      const canvasD = await html2canvas(detailsEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgD = canvasD.toDataURL('image/png')
+      const imgDH = (canvasD.height * contentWidth) / canvasD.width
+
+      const totalPages = 1 + Math.ceil(imgDH / availableH)
+
+      pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
+      pdf.addImage(imgS, 'PNG', margin, margin + headerH + 5, contentWidth, imgSH)
+      addFooter(pdf, 1, totalPages)
+
+      let heightLeft = imgDH
+      let pageNum = 2
+      let position = 0
+
+      while (heightLeft > 0) {
+        pdf.addPage()
+        pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
+        pdf.addImage(imgD, 'PNG', margin, margin + headerH + 5 + position, contentWidth, imgDH)
+        pdf.setFillColor(255, 255, 255)
+        pdf.rect(0, 0, pdfWidth, margin + headerH + 2, 'F')
+        pdf.rect(0, pdfHeight - footerH - margin, pdfWidth, footerH + margin, 'F')
+        pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
+        addFooter(pdf, pageNum, totalPages)
+        position -= availableH
+        heightLeft -= availableH
+        pageNum++
+      }
+
+      const pdfBase64 = pdf.output('datauristring')
+
+      // 2. ENVIAR VIA API
+      const coi = operadores?.find(o => o.tipo === 'Op. COI')?.nome || '—'
+      const reportSummary = `
+Data: ${fmtDate(repDate)}
+Turno: ${turnoInfo?.turno || '—'}
+Setor: ${turnoInfo?.setor || '—'}
+Op. COI: ${coi}
+Indicadores: ${kpis.kwhPorVapor ?? '—'} kW/ton | ${kpis.dVap ?? '—'} ton Vapor
+      `
+
+      const response = await fetch('/api/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailDestino,
+          subject: `Relatório Operacional ThermIQ — ${fmtDate(repDate)}`,
+          body: reportSummary,
+          attachmentBase64: pdfBase64,
+          filename: `Relatorio_ThermIQ_${repDate}.pdf`
+        })
+      })
+
+      if (response.ok) {
+        setEnvioStatus('success')
+        alert('E-mail enviado com sucesso!')
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao enviar e-mail')
+      }
+    } catch (err) {
+      console.error('Erro no envio:', err)
+      setEnvioStatus('error')
+      alert('Falha ao enviar e-mail: ' + err.message)
+    } finally {
+      setEnviandoEmail(false)
+    }
+  }
+
   useEffect(() => {
     const modalEl = document.querySelector('.modal')
     if (modalEl) modalEl.scrollTop = 0
@@ -707,7 +822,48 @@ Enviado via ThermIQ Relat
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-ghost btn-sm" onClick={handleEmail} title="Enviar por e-mail">
+              {/* Bloco de Envio por E-mail */}
+              <div className="no-print" style={{ 
+                marginRight: 'auto', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 8,
+                background: 'var(--bg-surface)',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border)'
+              }}>
+                <input 
+                  type="email" 
+                  placeholder="enviar para@email.com" 
+                  value={emailDestino}
+                  onChange={(e) => setEmailDestino(e.target.value)}
+                  style={{ 
+                    fontSize: 12, 
+                    padding: '6px 10px', 
+                    width: 200, 
+                    border: 'none', 
+                    background: 'transparent',
+                    outline: 'none'
+                  }}
+                />
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  onClick={handleSendEmail} 
+                  disabled={enviandoEmail}
+                  style={{ 
+                    gap: 6, 
+                    padding: '4px 10px', 
+                    fontSize: 11,
+                    color: enviandoEmail ? 'var(--text-muted)' : 'var(--accent)'
+                  }}
+                >
+                  {enviandoEmail ? <div className="spinner" style={{ width: 12, height: 12 }} /> : <Mail size={13} />}
+                  {enviandoEmail ? 'Enviando...' : 'Enviar por E-mail'}
+                </button>
+              </div>
+
+              <button className="btn btn-secondary btn-sm" onClick={handleEmail} title="Abrir no app de e-mail (mailto)">
                 <Mail size={14} /> E-mail
               </button>
               <button className="btn btn-ghost btn-sm" onClick={handlePrint} title="Imprimir">
