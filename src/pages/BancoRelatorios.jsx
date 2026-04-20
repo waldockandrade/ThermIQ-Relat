@@ -614,23 +614,23 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
         p.text(`Página ${n} de ${total}`, pdfWidth - margin, y, { align: 'right' })
       }
 
-      const canvasH = await html2canvas(headerEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
-      const imgH = canvasH.toDataURL('image/png')
+      const canvasH = await html2canvas(headerEl, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' })
+      const imgH = canvasH.toDataURL('image/jpeg', 0.8)
       const headerH = (canvasH.height * contentWidth) / canvasH.width
       const availableH = pdfHeight - (margin * 2) - headerH - footerH
 
-      const canvasS = await html2canvas(summaryEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
-      const imgS = canvasS.toDataURL('image/png')
+      const canvasS = await html2canvas(summaryEl, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' })
+      const imgS = canvasS.toDataURL('image/jpeg', 0.8)
       const imgSH = (canvasS.height * contentWidth) / canvasS.width
 
-      const canvasD = await html2canvas(detailsEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
-      const imgD = canvasD.toDataURL('image/png')
+      const canvasD = await html2canvas(detailsEl, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' })
+      const imgD = canvasD.toDataURL('image/jpeg', 0.8)
       const imgDH = (canvasD.height * contentWidth) / canvasD.width
 
       const totalPages = 1 + Math.ceil(imgDH / availableH)
 
-      pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
-      pdf.addImage(imgS, 'PNG', margin, margin + headerH + 5, contentWidth, imgSH)
+      pdf.addImage(imgH, 'JPEG', margin, margin, contentWidth, headerH)
+      pdf.addImage(imgS, 'JPEG', margin, margin + headerH + 5, contentWidth, imgSH)
       addFooter(pdf, 1, totalPages)
 
       let heightLeft = imgDH
@@ -639,12 +639,12 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
 
       while (heightLeft > 0) {
         pdf.addPage()
-        pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
-        pdf.addImage(imgD, 'PNG', margin, margin + headerH + 5 + position, contentWidth, imgDH)
+        pdf.addImage(imgH, 'JPEG', margin, margin, contentWidth, headerH)
+        pdf.addImage(imgD, 'JPEG', margin, margin + headerH + 5 + position, contentWidth, imgDH)
         pdf.setFillColor(255, 255, 255)
         pdf.rect(0, 0, pdfWidth, margin + headerH + 2, 'F')
         pdf.rect(0, pdfHeight - footerH - margin, pdfWidth, footerH + margin, 'F')
-        pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
+        pdf.addImage(imgH, 'JPEG', margin, margin, contentWidth, headerH)
         addFooter(pdf, pageNum, totalPages)
         position -= availableH
         heightLeft -= availableH

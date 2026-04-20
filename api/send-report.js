@@ -2,6 +2,11 @@ import { Resend } from 'resend';
 
 export const config = {
   maxDuration: 30,
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
 };
 
 const resend = new Resend(process.env.RESEND_API_KEY);
