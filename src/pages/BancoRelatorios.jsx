@@ -490,7 +490,6 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
     const el = document.getElementById('thermiq-print-area')
     if (!el) return
     
-    // Pequeno ajuste para garantir que o scroll esteja no topo antes do print
     el.scrollIntoView()
 
     try {
@@ -506,34 +505,48 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
       
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
+      const footerH = 15 // mm reservados para o rodapé
+      const pageContentH = pdfHeight - footerH
       
       const imgProps = pdf.getImageProperties(imgData)
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width
+      const totalPages = Math.ceil(imgHeight / pageContentH)
       
-      let heightLeft = imgHeight
-      let position = 0
-      
-      // Primeira página
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight)
-      heightLeft -= pdfHeight
-      
-      // Páginas subsequentes (se houver)
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
+      const addFooter = (p, n, total) => {
+        p.setFontSize(8)
+        p.setTextColor(150)
+        const now = new Date().toLocaleString('pt-BR')
+        const footerY = pdfHeight - 8
+        p.line(14, footerY - 4, pdfWidth - 14, footerY - 4)
+        p.text(`ThermIQ Relat — Inteligência Operacional`, 14, footerY)
+        p.text(`Gerado em: ${now}`, pdfWidth / 2, footerY, { align: 'center' })
+        p.text(`Página ${n} de ${total}`, pdfWidth - 14, footerY, { align: 'right' })
+      }
+
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) pdf.addPage()
+        
+        // Calculamos a posição da "janela" da imagem
+        const position = -(i * pageContentH)
+        
+        // Adicionamos a imagem. Importante: usamos pageContentH para não sobrepor o rodapé
+        // Cortamos a imagem usando a técnica de offset negativo
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight)
-        heightLeft -= pdfHeight
+        
+        // Cobrimos qualquer excesso que possa cair na área do rodapé (opcional se o slice for exato)
+        pdf.setFillColor(255, 255, 255)
+        pdf.rect(0, pageContentH, pdfWidth, footerH, 'F')
+        
+        addFooter(pdf, i + 1, totalPages)
       }
       
       pdf.save(`Relatorio_ThermIQ_${repDate}_${turnoInfo?.turno || 'Turno'}.pdf`)
       
-      if (report._autoDownload) {
-        onClose()
-      }
+      if (report._autoDownload) onClose()
     } catch (err) {
       console.error('Falha ao gerar PDF:', err)
       if (report._autoDownload) onClose()
-      else alert('Erro ao gerar o PDF. Tente usar a opção Imprimir.')
+      else alert('Erro ao gerar o PDF.')
     }
   }
 
@@ -970,10 +983,19 @@ Enviado via ThermIQ Relat
               </button>
             </div>
 
-            {/* Print footer */}
-            <div style={{ marginTop: 'var(--space-xl)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--border)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>ThermIQ Relat — Relatório gerado em {new Date().toLocaleString('pt-BR')}</span>
-              <span>ID: {report.id}</span>
+            {/* ── SEÇÃO FINAL: Rodapé Institucional ── */}
+            <div className="print-section" style={{ 
+              marginTop: 'var(--space-xl)', 
+              paddingTop: 'var(--space-md)', 
+              borderTop: '1px solid var(--border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
+                ThermIQ Relat — Sistema de Inteligência Operacional
+              </div>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>
+                Relatório gerado em: {new Date().toLocaleString('pt-BR')}
+              </div>
             </div>
           </div>
         </div>
