@@ -1004,6 +1004,7 @@ Enviado via ThermIQ Relat
           </div>
         </div>
       </div>
+    </div>
     </>
   )
 }
