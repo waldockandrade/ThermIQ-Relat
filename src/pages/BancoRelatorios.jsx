@@ -487,61 +487,62 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
 
   /* ── PDF Download (High Res) ── */
   async function handleDownloadPDF() {
-    const el = document.getElementById('thermiq-print-area')
-    if (!el) return
+    const el1 = document.getElementById('pdf-page-1')
+    const el2 = document.getElementById('pdf-page-2')
+    if (!el1 || !el2) return
     
-    el.scrollIntoView()
-
     try {
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      })
-      
-      const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
-      
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
-      const footerH = 15 // mm reservados para o rodapé
-      const pageContentH = pdfHeight - footerH
-      
-      const imgProps = pdf.getImageProperties(imgData)
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width
-      const totalPages = Math.ceil(imgHeight / pageContentH)
-      
+      const footerH = 15
+      const contentH = pdfHeight - footerH
+
       const addFooter = (p, n, total) => {
         p.setFontSize(8)
         p.setTextColor(150)
         const now = new Date().toLocaleString('pt-BR')
-        const footerY = pdfHeight - 8
-        p.line(14, footerY - 4, pdfWidth - 14, footerY - 4)
-        p.text(`ThermIQ Relat — Inteligência Operacional`, 14, footerY)
-        p.text(`Gerado em: ${now}`, pdfWidth / 2, footerY, { align: 'center' })
-        p.text(`Página ${n} de ${total}`, pdfWidth - 14, footerY, { align: 'right' })
+        p.line(14, pdfHeight - 12, pdfWidth - 14, pdfHeight - 12)
+        p.text(`ThermIQ Relat — Inteligência Operacional`, 14, pdfHeight - 8)
+        p.text(`Gerado: ${now}`, pdfWidth / 2, pdfHeight - 8, { align: 'center' })
+        p.text(`Página ${n} de ${total}`, pdfWidth - 14, pdfHeight - 8, { align: 'right' })
       }
 
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) pdf.addPage()
+      // 1. CAPTURA PÁGINA 1
+      const canvas1 = await html2canvas(el1, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const img1 = canvas1.toDataURL('image/png')
+      pdf.addImage(img1, 'PNG', 0, 0, pdfWidth, (canvas1.height * pdfWidth) / canvas1.width)
+      
+      // 2. CAPTURA PÁGINA 2 (E SUBSEQUENTES SE LONGO)
+      const canvas2 = await html2canvas(el2, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const img2 = canvas2.toDataURL('image/png')
+      const img2H = (canvas2.height * pdfWidth) / canvas2.width
+      
+      let heightLeft = img2H
+      let pageNum = 2
+      let position = 0
+
+      // Precisamos saber o total de páginas
+      const totalPages = 1 + Math.ceil(img2H / contentH)
+
+      addFooter(pdf, 1, totalPages)
+      
+      while (heightLeft > 0) {
+        pdf.addPage()
+        pdf.addImage(img2, 'PNG', 0, position, pdfWidth, img2H)
         
-        // Calculamos a posição da "janela" da imagem
-        const position = -(i * pageContentH)
-        
-        // Adicionamos a imagem. Importante: usamos pageContentH para não sobrepor o rodapé
-        // Cortamos a imagem usando a técnica de offset negativo
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight)
-        
-        // Cobrimos qualquer excesso que possa cair na área do rodapé (opcional se o slice for exato)
+        // Cobre a área do rodapé na P2+
         pdf.setFillColor(255, 255, 255)
-        pdf.rect(0, pageContentH, pdfWidth, footerH, 'F')
+        pdf.rect(0, contentH, pdfWidth, footerH, 'F')
         
-        addFooter(pdf, i + 1, totalPages)
+        addFooter(pdf, pageNum, totalPages)
+        
+        position -= contentH
+        heightLeft -= contentH
+        pageNum++
       }
-      
+
       pdf.save(`Relatorio_ThermIQ_${repDate}_${turnoInfo?.turno || 'Turno'}.pdf`)
-      
       if (report._autoDownload) onClose()
     } catch (err) {
       console.error('Falha ao gerar PDF:', err)
@@ -695,11 +696,12 @@ Enviado via ThermIQ Relat
           </div>
 
           {/* ══════════════════════════════════════════════
-              PRINT AREA
+              PRINT AREA (Dividida para paginação fixa)
           ══════════════════════════════════════════════ */}
           <div id="thermiq-print-area" ref={printRef} style={{ padding: 'var(--space-xl)' }}>
-
-            {/* Print-only header with Branding */}
+            
+            <div id="pdf-page-1">
+              {/* Print-only header with Branding */}
             <div className="print-section" style={{ 
               display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
               borderBottom: '2px solid var(--border)', paddingBottom: 12, marginBottom: 24 
@@ -871,9 +873,11 @@ Enviado via ThermIQ Relat
                 </div>
               </div>
             )}
+            </div>
 
+            <div id="pdf-page-2">
             {/* ── SEÇÃO 4: Diário de Bordo ── */}
-            <div className="print-section" style={{ marginBottom: 'var(--space-xl)' }}>
+            <div className="print-section pdf-page-break" style={{ marginBottom: 'var(--space-xl)', marginTop: 40 }}>
               <div className="section-label">
                 <BookOpen size={13} style={{ display:'inline', marginRight:6, color:'var(--accent)' }} />
                 Diário de Bordo
@@ -972,8 +976,8 @@ Enviado via ThermIQ Relat
               )}
             </div>
 
-            {/* ── Botão fechar no rodapé (visível ao chegar ao final) ── */}
-            <div className="no-print" style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-xl)' }}>
+            {/* ── Botão fechar no rodapé ── */}
+            <div className="no-print" data-html2canvas-ignore="true" style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-xl)' }}>
               <button
                 className="btn btn-ghost"
                 onClick={onClose}
