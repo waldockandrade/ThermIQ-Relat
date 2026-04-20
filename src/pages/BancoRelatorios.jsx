@@ -490,10 +490,9 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
     const el = document.getElementById('thermiq-print-area')
     if (!el) return
     
-    // Mostra indicador de processamento?
     try {
       const canvas = await html2canvas(el, {
-        scale: 2, // 2x para alta resolução
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff'
@@ -509,15 +508,28 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
       
-      // Se passar de uma página, jspdf não corta automático com addImage. 
-      // Mas para relatórios curtos, funciona bem.
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
       pdf.save(`Relatorio_ThermIQ_${repDate}_${turnoInfo?.turno || 'Turno'}.pdf`)
+      
+      if (report._autoDownload) {
+        onClose()
+      }
     } catch (err) {
       console.error('Falha ao gerar PDF:', err)
-      alert('Erro ao gerar o PDF. Tente usar a opção Imprimir.')
+      if (report._autoDownload) onClose()
+      else alert('Erro ao gerar o PDF. Tente usar a opção Imprimir.')
     }
   }
+
+  useEffect(() => {
+    const modalEl = document.querySelector('.modal')
+    if (modalEl) modalEl.scrollTop = 0
+
+    if (report._autoDownload) {
+      const timer = setTimeout(handleDownloadPDF, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [report._autoDownload])
 
   /* ── Email via mailto ── */
   function handleEmail() {
@@ -1047,7 +1059,10 @@ export default function BancoRelatorios() {
                 const kw = hasVap && hasKw && dVap > 0 ? round(dKw / dVap, 1) : null
 
                 return (
-                  <tr key={rep.id} style={{ cursor: 'pointer' }} onClick={() => setViewing(rep)}>
+                  <tr key={rep.id} style={{ cursor: 'pointer' }} onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                      setViewing(rep)
+                    }}>
                     <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rep.turnoInfo?.data)}</td>
                     <td><span className="badge badge-muted">{rep.turnoInfo?.turno}</span></td>
                     <td>{rep.turnoInfo?.setor}</td>
@@ -1066,10 +1081,17 @@ export default function BancoRelatorios() {
                       }
                     </td>
                     <td onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 4 }}>
                         <button className="btn btn-sm btn-ghost btn-icon" title="Visualizar relatório"
-                          onClick={() => setViewing(rep)}>
+                          onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                            setViewing(rep)
+                          }}>
                           <Eye size={13} />
+                        </button>
+                        <button className="btn btn-sm btn-ghost btn-icon" title="Baixar PDF"
+                          onClick={() => setViewing({ ...rep, _autoDownload: true })}>
+                          <Download size={13} style={{ color: 'var(--accent)' }} />
                         </button>
                         {isAdmin() && (
                           <>
