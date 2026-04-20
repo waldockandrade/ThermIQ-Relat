@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const pureBase64 = attachmentBase64.split('base64,')[1] || attachmentBase64;
 
     const data = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Relatórios ThermIQ <relatorios@thermiqenergy.com>',
       to: [to],
       subject: subject,
       html: `
