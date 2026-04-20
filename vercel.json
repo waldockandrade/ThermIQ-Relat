@@ -1,5 +1,4 @@
 {
-  "name": "thermiq-relat",
   "rewrites": [
     {
       "source": "/(.*)",
