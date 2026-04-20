@@ -428,7 +428,7 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
   const repNotas   = maintenances.filter(m => m.data === repDate)
   const selVars    = allVars.filter(v => selectedVarIds?.includes(v.id))
 
-  const [emailDestino, setEmailDestino] = useState('')
+  const [emailDestino, setEmailDestino] = useState(report._autoEmail || '')
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [envioStatus, setEnvioStatus] = useState(null) // 'success' | 'error'
 
@@ -677,7 +677,14 @@ Indicadores: ${kpis.kwhPorVapor ?? '—'} kW/ton | ${kpis.dVap ?? '—'} ton Vap
 
       if (response.ok) {
         setEnvioStatus('success')
-        alert('E-mail enviado com sucesso!')
+        if (report._autoEmail) {
+          setTimeout(() => {
+            alert('E-mail enviado com sucesso!')
+            onClose()
+          }, 500)
+        } else {
+          alert('E-mail enviado com sucesso!')
+        }
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Erro ao enviar e-mail')
@@ -699,7 +706,11 @@ Indicadores: ${kpis.kwhPorVapor ?? '—'} kW/ton | ${kpis.dVap ?? '—'} ton Vap
       const timer = setTimeout(handleDownloadPDF, 400)
       return () => clearTimeout(timer)
     }
-  }, [report._autoDownload])
+    if (report._autoEmail) {
+      const timer = setTimeout(handleSendEmail, 600)
+      return () => clearTimeout(timer)
+    }
+  }, [report._autoDownload, report._autoEmail])
 
   /* ── Email via mailto ── */
   function handleEmail() {
@@ -822,48 +833,12 @@ Enviado via ThermIQ Relat
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {/* Bloco de Envio por E-mail */}
-              <div className="no-print" style={{ 
-                marginRight: 'auto', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 8,
-                background: 'var(--bg-surface)',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border)'
-              }}>
-                <input 
-                  type="email" 
-                  placeholder="enviar para@email.com" 
-                  value={emailDestino}
-                  onChange={(e) => setEmailDestino(e.target.value)}
-                  style={{ 
-                    fontSize: 12, 
-                    padding: '6px 10px', 
-                    width: 200, 
-                    border: 'none', 
-                    background: 'transparent',
-                    outline: 'none'
-                  }}
-                />
-                <button 
-                  className="btn btn-ghost btn-sm" 
-                  onClick={handleSendEmail} 
-                  disabled={enviandoEmail}
-                  style={{ 
-                    gap: 6, 
-                    padding: '4px 10px', 
-                    fontSize: 11,
-                    color: enviandoEmail ? 'var(--text-muted)' : 'var(--accent)'
-                  }}
-                >
-                  {enviandoEmail ? <div className="spinner" style={{ width: 12, height: 12 }} /> : <Mail size={13} />}
-                  {enviandoEmail ? 'Enviando...' : 'Enviar por E-mail'}
+              {!report._autoEmail && (
+                <button className="btn btn-secondary btn-sm" onClick={handleEmail} title="Abrir no app de e-mail (mailto)">
+                  <Mail size={14} /> E-mail (mailto)
                 </button>
-              </div>
-
-              <button className="btn btn-secondary btn-sm" onClick={handleEmail} title="Abrir no app de e-mail (mailto)">
+              )}
+              <button className="btn btn-ghost btn-sm" onClick={handlePrint} title="Imprimir">
                 <Mail size={14} /> E-mail
               </button>
               <button className="btn btn-ghost btn-sm" onClick={handlePrint} title="Imprimir">
@@ -1204,6 +1179,8 @@ export default function BancoRelatorios() {
   const [viewing, setViewing] = useState(null)
   const [editing, setEditing] = useState(null)   // report being edited
   const [confirmDel, setConfirmDel] = useState(null)
+  const [emailModalTarget, setEmailModalTarget] = useState(null)
+  const [emailInput, setEmailInput] = useState('')
 
   function handleDelete(id) {
     deleteReport(id)
@@ -1319,6 +1296,13 @@ export default function BancoRelatorios() {
                           onClick={() => setViewing({ ...rep, _autoDownload: true })}>
                           <Download size={13} style={{ color: 'var(--accent)' }} />
                         </button>
+                        <button className="btn btn-sm btn-ghost btn-icon" title="Enviar por e-mail"
+                          onClick={() => {
+                            setEmailInput('')
+                            setEmailModalTarget(rep)
+                          }}>
+                          <Mail size={13} style={{ color: 'var(--accent)' }} />
+                        </button>
                         {isAdmin() && (
                           <>
                             <button className="btn btn-sm btn-ghost btn-icon" title="Editar lançamentos"
@@ -1341,6 +1325,50 @@ export default function BancoRelatorios() {
           </table>
         </div>
       </div>
+
+      {/* ── Email Prompt Modal ── */}
+      {emailModalTarget && (
+        <div className="modal-overlay" onClick={() => setEmailModalTarget(null)}>
+          <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><Mail size={18} style={{ color: 'var(--accent)', verticalAlign: 'middle', marginRight: 8 }} /> Enviar Relatório</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => setEmailModalTarget(null)}><X size={16}/></button>
+            </div>
+            <div className="modal-body" style={{ padding: '20px 0' }}>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 16 }}>
+                Enviar PDF do relatório de <strong>{fmtDate(emailModalTarget.turnoInfo?.data)}</strong> para o e-mail:
+              </p>
+              <div className="form-group">
+                <input 
+                  type="email" 
+                  className="form-control"
+                  placeholder="exemplo@empresa.com.br"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  autoFocus
+                  style={{ width: '100%', fontSize: 14 }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button className="btn btn-secondary" onClick={() => setEmailModalTarget(null)}>Cancelar</button>
+              <button className="btn btn-primary" 
+                onClick={() => {
+                  if (!emailInput || !emailInput.includes('@')) {
+                    alert('Por favor, insira um e-mail válido.')
+                    return
+                  }
+                  // Aciona o modo de envio automático no modal de detalhes
+                  setViewing({ ...emailModalTarget, _autoEmail: emailInput })
+                  setEmailModalTarget(null)
+                }}
+              >
+                Confirmar Envio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Confirm delete modal ── */}
       {confirmDel && (
