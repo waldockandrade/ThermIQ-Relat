@@ -487,58 +487,83 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
 
   /* ── PDF Download (High Res) ── */
   async function handleDownloadPDF() {
-    const el1 = document.getElementById('pdf-page-1')
-    const el2 = document.getElementById('pdf-page-2')
-    if (!el1 || !el2) return
+    const headerEl = document.getElementById('pdf-header')
+    const summaryEl = document.getElementById('pdf-summary')
+    const detailsEl = document.getElementById('pdf-details')
+    
+    if (!headerEl || !summaryEl || !detailsEl) return
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4')
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const pdfWidth = pdf.internal.pageSize.getWidth() // 210
+      const pdfHeight = pdf.internal.pageSize.getHeight() // 297
+      const margin = 12 // mm de margem lateral e superior/inferior
+      const contentWidth = pdfWidth - (margin * 2)
       const footerH = 15
-      const contentH = pdfHeight - footerH
-
+      
       const addFooter = (p, n, total) => {
         p.setFontSize(8)
         p.setTextColor(150)
         const now = new Date().toLocaleString('pt-BR')
-        p.line(14, pdfHeight - 12, pdfWidth - 14, pdfHeight - 12)
-        p.text(`ThermIQ Relat — Inteligência Operacional`, 14, pdfHeight - 8)
-        p.text(`Gerado: ${now}`, pdfWidth / 2, pdfHeight - 8, { align: 'center' })
-        p.text(`Página ${n} de ${total}`, pdfWidth - 14, pdfHeight - 8, { align: 'right' })
+        const y = pdfHeight - margin
+        p.setDrawColor(220)
+        p.line(margin, y - 6, pdfWidth - margin, y - 6)
+        p.text(`ThermIQ Relat — Inteligência Operacional`, margin, y)
+        p.text(`Gerado em: ${now}`, pdfWidth / 2, y, { align: 'center' })
+        p.text(`Página ${n} de ${total}`, pdfWidth - margin, y, { align: 'right' })
       }
 
-      // 1. CAPTURA PÁGINA 1
-      const canvas1 = await html2canvas(el1, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
-      const img1 = canvas1.toDataURL('image/png')
-      pdf.addImage(img1, 'PNG', 0, 0, pdfWidth, (canvas1.height * pdfWidth) / canvas1.width)
-      
-      // 2. CAPTURA PÁGINA 2 (E SUBSEQUENTES SE LONGO)
-      const canvas2 = await html2canvas(el2, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
-      const img2 = canvas2.toDataURL('image/png')
-      const img2H = (canvas2.height * pdfWidth) / canvas2.width
-      
-      let heightLeft = img2H
+      // 1. CAPTURAR CABEÇALHO
+      const canvasH = await html2canvas(headerEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgH = canvasH.toDataURL('image/png')
+      const headerH = (canvasH.height * contentWidth) / canvasH.width
+      const availableH = pdfHeight - (margin * 2) - headerH - footerH
+
+      // 2. CAPTURAR CONTEÚDOS
+      const canvasS = await html2canvas(summaryEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgS = canvasS.toDataURL('image/png')
+      const imgSH = (canvasS.height * contentWidth) / canvasS.width
+
+      const canvasD = await html2canvas(detailsEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgD = canvasD.toDataURL('image/png')
+      const imgDH = (canvasD.height * contentWidth) / canvasD.width
+
+      // 3. CALCULAR PÁGINAS TOTAIS
+      const totalPages = 1 + Math.ceil(imgDH / availableH)
+
+      // PÁGINA 1: Header + Summary
+      pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
+      // O summary (KPIs/Tabelas) fica logo abaixo do header
+      pdf.addImage(imgS, 'PNG', margin, margin + headerH + 5, contentWidth, imgSH)
+      addFooter(pdf, 1, totalPages)
+
+      // PÁGINAS 2+: Header + Detalhes Sliced
+      let heightLeft = imgDH
       let pageNum = 2
       let position = 0
 
-      // Precisamos saber o total de páginas
-      const totalPages = 1 + Math.ceil(img2H / contentH)
-
-      addFooter(pdf, 1, totalPages)
-      
       while (heightLeft > 0) {
         pdf.addPage()
-        pdf.addImage(img2, 'PNG', 0, position, pdfWidth, img2H)
         
-        // Cobre a área do rodapé na P2+
+        // Repetir cabeçalho
+        pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
+        
+        // Adicionar fatia dos detalhes
+        // O offset negativo 'position' controla qual parte da imagem D estamos vendo
+        pdf.addImage(imgD, 'PNG', margin, margin + headerH + 5 + position, contentWidth, imgDH)
+        
+        // Cobrir áreas de estouro (header/footer) para limpeza
         pdf.setFillColor(255, 255, 255)
-        pdf.rect(0, contentH, pdfWidth, footerH, 'F')
+        pdf.rect(0, 0, pdfWidth, margin + headerH + 2, 'F') // Cobre acima (re-add header below)
+        pdf.rect(0, pdfHeight - footerH - margin, pdfWidth, footerH + margin, 'F') // Cobre abaixo
+        
+        // Re-desenhar o header por cima se o cover acima cobriu demais
+        pdf.addImage(imgH, 'PNG', margin, margin, contentWidth, headerH)
         
         addFooter(pdf, pageNum, totalPages)
         
-        position -= contentH
-        heightLeft -= contentH
+        position -= availableH
+        heightLeft -= availableH
         pageNum++
       }
 
@@ -700,32 +725,34 @@ Enviado via ThermIQ Relat
           ══════════════════════════════════════════════ */}
           <div id="thermiq-print-area" ref={printRef} style={{ padding: 'var(--space-xl)' }}>
             
-            <div id="pdf-page-1">
-              {/* Print-only header with Branding */}
-            <div className="print-section" style={{ 
-              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-              borderBottom: '2px solid var(--border)', paddingBottom: 12, marginBottom: 24 
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <div style={{ width: 24, height: 24, background: 'var(--accent)', borderRadius: 4 }}></div>
-                  <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                    ThermIQ <span style={{ color: 'var(--accent)', fontWeight: 400 }}>Relat</span>
-                  </h1>
+            <div id="pdf-header">
+              {/* Branding Header Institucional */}
+              <div className="print-section" style={{ 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+                borderBottom: '2px solid var(--border)', paddingBottom: 12, marginBottom: 24 
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={{ width: 24, height: 24, background: 'var(--accent)', borderRadius: 4 }}></div>
+                    <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                      ThermIQ <span style={{ color: 'var(--accent)', fontWeight: 400 }}>Relat</span>
+                    </h1>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Sistema de Inteligência Operacional
+                  </div>
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Sistema de Inteligência Operacional
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>Relatório Operacional</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                  {fmtDate(repDate)} · {turnoInfo?.turno} · {turnoInfo?.setor}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>Relatório Operacional</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                    {fmtDate(repDate)} · {turnoInfo?.turno} · {turnoInfo?.setor}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* ── SEÇÃO 1: Cabeçalho do turno + Operadores ── */}
+            <div id="pdf-summary">
+              {/* ── SEÇÃO 1: Cabeçalho do turno + Operadores ── */}
             <div className="print-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-lg)', marginBottom: 'var(--space-xl)' }}>
               <div>
                 <div className="section-label">
@@ -875,7 +902,7 @@ Enviado via ThermIQ Relat
             )}
             </div>
 
-            <div id="pdf-page-2">
+            <div id="pdf-details">
             {/* ── SEÇÃO 4: Diário de Bordo ── */}
             <div className="print-section pdf-page-break" style={{ marginBottom: 'var(--space-xl)', marginTop: 40 }}>
               <div className="section-label">
