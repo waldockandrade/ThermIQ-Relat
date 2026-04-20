@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 import { 
   fmt, 
   fmtDate, 
@@ -292,18 +294,47 @@ function delta(lans, varId) {
 
 /* ─── Mini KPI Badge ──────────────────────────── */
 
-/* ─── Mini KPI Badge ──────────────────────────── */
-function KPIBadge({ label, value, unit, color }) {
+/* ─── Summary Card (Dashboard Style) ──────────── */
+function SummaryCard({ label, value, unit, icon: Icon, color }) {
   return (
     <div style={{
       background: 'var(--bg-surface)', border: '1px solid var(--border)',
-      borderRadius: 'var(--radius-sm)', padding: '10px 16px',
-      display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140,
+      borderRadius: 'var(--radius-md)', padding: '12px 16px',
+      display: 'flex', flexDirection: 'column', gap: 8,
+      boxShadow: 'var(--shadow-sm)'
     }}>
-      <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
-        {value !== null ? value.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) : '—'}
-        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginLeft: 4 }}>{unit}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ 
+          width: 30, height: 30, borderRadius: 6, 
+          background: `${color}10`, color: color,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <Icon size={16} />
+        </div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{unit}</div>
+      </div>
+      <div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+          {value !== null ? value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—'}
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>{label}</div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Mini Stat Row ──────────────────────────── */
+function MiniStat({ label, value, unit }) {
+  return (
+    <div style={{
+      padding: '8px 12px', background: 'var(--bg-card)', 
+      border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+      display: 'flex', flexDirection: 'column', gap: 2
+    }}>
+      <div style={{ fontSize: 8, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+        {value !== null ? value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—'}
+        <span style={{ fontSize: 9, marginLeft: 4, color: 'var(--text-muted)', fontWeight: 400 }}>{unit}</span>
       </div>
     </div>
   )
@@ -454,6 +485,40 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
     window.print()
   }
 
+  /* ── PDF Download (High Res) ── */
+  async function handleDownloadPDF() {
+    const el = document.getElementById('thermiq-print-area')
+    if (!el) return
+    
+    // Mostra indicador de processamento?
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2, // 2x para alta resolução
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+      
+      const imgProps = pdf.getImageProperties(imgData)
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+      
+      // Se passar de uma página, jspdf não corta automático com addImage. 
+      // Mas para relatórios curtos, funciona bem.
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      pdf.save(`Relatorio_ThermIQ_${repDate}_${turnoInfo?.turno || 'Turno'}.pdf`)
+    } catch (err) {
+      console.error('Falha ao gerar PDF:', err)
+      alert('Erro ao gerar o PDF. Tente usar a opção Imprimir.')
+    }
+  }
+
   /* ── Email via mailto ── */
   function handleEmail() {
     const subject = encodeURIComponent(`Relatório ThermIQ — ${fmtDate(repDate)} ${turnoInfo?.turno || ''}`)
@@ -578,8 +643,11 @@ Enviado via ThermIQ Relat
               <button className="btn btn-ghost btn-sm" onClick={handleEmail} title="Enviar por e-mail">
                 <Mail size={14} /> E-mail
               </button>
-              <button className="btn btn-primary btn-sm" onClick={handlePrint} title="Exportar PDF A4">
-                <Download size={14} /> PDF A4
+              <button className="btn btn-ghost btn-sm" onClick={handlePrint} title="Imprimir">
+                <Clock size={14} /> Imprimir
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={handleDownloadPDF} title="Baixar PDF Profissional">
+                <Download size={14} /> Baixar PDF
               </button>
               <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}><X size={16} /></button>
             </div>
@@ -590,10 +658,28 @@ Enviado via ThermIQ Relat
           ══════════════════════════════════════════════ */}
           <div id="thermiq-print-area" ref={printRef} style={{ padding: 'var(--space-xl)' }}>
 
-            {/* Print-only header */}
-            <div className="print-section" style={{ display:'none' }}>
-              <div className="print-title">ThermIQ Relat — Relatório Operacional</div>
-              <div className="print-subtitle">{fmtDate(repDate)} · {turnoInfo?.turno} · {turnoInfo?.setor} · {turnoInfo?.horaInicio}–{turnoInfo?.horaFim}</div>
+            {/* Print-only header with Branding */}
+            <div className="print-section" style={{ 
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+              borderBottom: '2px solid var(--border)', paddingBottom: 12, marginBottom: 24 
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <div style={{ width: 24, height: 24, background: 'var(--accent)', borderRadius: 4 }}></div>
+                  <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                    ThermIQ <span style={{ color: 'var(--accent)', fontWeight: 400 }}>Relat</span>
+                  </h1>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Sistema de Inteligência Operacional
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>Relatório Operacional</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                  {fmtDate(repDate)} · {turnoInfo?.turno} · {turnoInfo?.setor}
+                </div>
+              </div>
             </div>
 
             {/* ── SEÇÃO 1: Cabeçalho do turno + Operadores ── */}
@@ -649,22 +735,51 @@ Enviado via ThermIQ Relat
               </div>
             </div>
 
-            {/* ── SEÇÃO 2: KPIs de Eficiência ── */}
+            {/* ── SEÇÃO 2: KPIs de Eficiência (Dashboard Style) ── */}
             <div className="print-section" style={{ marginBottom: 'var(--space-xl)' }}>
               <div className="section-label">
                 <BarChart2 size={13} style={{ display:'inline', marginRight:6, color:'var(--accent)' }} />
-                Indicadores de Eficiência
+                Sumário de Performance
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
-                <KPIBadge label="kW Gerado / ton Vapor"      value={kpis.kwhPorVapor}  unit="kW/ton"  color="#f97316" />
-                <KPIBadge label="kWh Consumido / ton Vapor"  value={kpis.kwhConsPorVap} unit="kWh/ton" color="#a855f7" />
-                <KPIBadge label="kg Vapor / m³ Cavaco"       value={kpis.kgPorCavaco}   unit="kg/m³"   color="#22c55e" />
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(3, 1fr)', 
+                gap: 'var(--space-md)', 
+                marginBottom: 'var(--space-lg)' 
+              }}>
+                <SummaryCard 
+                  label="kW Gerado / ton Vapor" 
+                  value={kpis.kwhPorVapor} 
+                  unit="kW/ton" 
+                  icon={Zap}
+                  color="#f97316"
+                />
+                <SummaryCard 
+                  label="kWh Cons. / ton Vapor" 
+                  value={kpis.kwhConsPorVap} 
+                  unit="kWh/ton" 
+                  icon={Activity}
+                  color="#a855f7"
+                />
+                <SummaryCard 
+                  label="kg Vapor / m³ Cavaco" 
+                  value={kpis.kgPorCavaco} 
+                  unit="kg/m³" 
+                  icon={Droplets}
+                  color="#22c55e"
+                />
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-md)' }}>
-                <KPIBadge label="Δ Vapor Gerado"     value={kpis.dVap}  unit="ton"  color="#22c55e" />
-                <KPIBadge label="Δ Energia Gerada"   value={kpis.dMW}   unit="MW"   color="#f97316" />
-                <KPIBadge label="Δ Energia Consumida" value={kpis.dKwhC} unit="kWh"  color="#a855f7" />
-                <KPIBadge label="Δ Cavaco Consumido" value={kpis.dCav}  unit="m³"   color="#eab308" />
+
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(4, 1fr)', 
+                gap: 'var(--space-sm)' 
+              }}>
+                <MiniStat label="Vapor Gerado" value={kpis.dVap} unit="ton" />
+                <MiniStat label="Energia Gerada" value={kpis.dMW} unit="MW" />
+                <MiniStat label="Energia Cons." value={kpis.dKwhC} unit="kWh" />
+                <MiniStat label="Cavaco Cons." value={kpis.dCav} unit="m³" />
               </div>
             </div>
 
