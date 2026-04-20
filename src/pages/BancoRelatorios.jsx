@@ -490,6 +490,9 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
     const el = document.getElementById('thermiq-print-area')
     if (!el) return
     
+    // Pequeno ajuste para garantir que o scroll esteja no topo antes do print
+    el.scrollIntoView()
+
     try {
       const canvas = await html2canvas(el, {
         scale: 2,
@@ -497,18 +500,31 @@ function ReportDetail({ report, downtimes, maintenances, allVars, onClose }) {
         logging: false,
         backgroundColor: '#ffffff'
       })
+      
       const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      })
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
       
       const imgProps = pdf.getImageProperties(imgData)
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      let heightLeft = imgHeight
+      let position = 0
+      
+      // Primeira página
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight)
+      heightLeft -= pdfHeight
+      
+      // Páginas subsequentes (se houver)
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight)
+        heightLeft -= pdfHeight
+      }
+      
       pdf.save(`Relatorio_ThermIQ_${repDate}_${turnoInfo?.turno || 'Turno'}.pdf`)
       
       if (report._autoDownload) {
