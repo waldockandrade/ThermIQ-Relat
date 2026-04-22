@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Bell, Search, Calendar, Menu } from 'lucide-react'
 import './Topbar.css'
@@ -14,8 +14,8 @@ const ROUTE_LABELS = {
   '/usuarios':             { label: 'Gestão de Usuários',    sub: 'Tela 8' },
 }
 
-function nowLabel() {
-  return new Date().toLocaleDateString('pt-BR', {
+function formatDate(date) {
+  return date.toLocaleDateString('pt-BR', {
     weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
   })
 }
@@ -23,6 +23,8 @@ function nowLabel() {
 export default function Topbar({ onMobileToggle }) {
   const location = useLocation()
   const route    = ROUTE_LABELS[location.pathname] || { label: 'ThermIQ Relat', sub: '' }
+  // BUG-05: calculado apenas uma vez no mount, não em cada re-render
+  const [dateLabel] = useState(() => formatDate(new Date()))
 
   return (
     <header className="topbar">
@@ -37,7 +39,7 @@ export default function Topbar({ onMobileToggle }) {
       <div className="topbar-right">
         <div className="topbar-date">
           <Calendar size={14} />
-          <span>{nowLabel()}</span>
+          <span>{dateLabel}</span>
         </div>
         <div className="topbar-divider" />
         <button className="topbar-icon-btn" title="Notificações">

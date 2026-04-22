@@ -109,7 +109,10 @@ export default function BancoDados() {
     const link = document.createElement('a')
     link.href = url
     link.setAttribute('download', 'thermiq_banco_dados_operacional.csv')
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url) // BUG-03: libera memória após download
   }
 
   return (

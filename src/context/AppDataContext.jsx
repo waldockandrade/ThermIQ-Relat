@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { supabase } from '../lib/supabase'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 
 const AppDataContext = createContext(null)
 
@@ -69,74 +68,43 @@ export function AppDataProvider({ children }) {
   const [dashboardConfig, setDashboardConfig] = useState(DEFAULT_DASHBOARD_CONFIG)
 
   const [isLoaded, setIsLoaded] = useState(false)
-  const [fatalError, setFatalError] = useState(false)
 
-  // Initialization: Fetch from Supabase
+  // Initialization: Load from localStorage
   useEffect(() => {
-    async function loadData() {
-      if (!supabase) {
-        setFatalError(true)
-        return
+    try {
+      const raw = localStorage.getItem('thermiq_categories')
+      if (raw) setCategories(JSON.parse(raw))
+
+      const rawR = localStorage.getItem('thermiq_reports')
+      if (rawR) setReports(JSON.parse(rawR))
+
+      const rawD = localStorage.getItem('thermiq_downtimes')
+      if (rawD) setDowntimes(JSON.parse(rawD))
+
+      const rawM = localStorage.getItem('thermiq_maintenances')
+      if (rawM) setMaintenances(JSON.parse(rawM))
+
+      const rawDash = localStorage.getItem('thermiq_dashboard_config')
+      if (rawDash) {
+        const storedDash = JSON.parse(rawDash)
+        setDashboardConfig(prev => ({
+          ...prev,
+          ...storedDash,
+          qualMetas: { ...DEFAULT_DASHBOARD_CONFIG.qualMetas, ...(storedDash.qualMetas || {}) }
+        }))
       }
-      try {
-        const { data, error } = await supabase.from('app_data').select('*')
-        if (error) {
-          console.error("Erro ao buscar dados do Supabase:", error.message)
-          setIsLoaded(true)
-          return
-        }
-
-        const dict = {}
-        if (data) {
-          data.forEach(row => { dict[row.id] = row.data })
-        }
-
-        if (dict['thermiq_categories']) setCategories(dict['thermiq_categories'])
-        if (dict['thermiq_reports']) setReports(dict['thermiq_reports'])
-        if (dict['thermiq_downtimes']) setDowntimes(dict['thermiq_downtimes'])
-        if (dict['thermiq_maintenances']) setMaintenances(dict['thermiq_maintenances'])
-
-        let storedDash = dict['thermiq_dashboard_config']
-        
-        if (storedDash) {
-          if (!storedDash.customQuantitatives) {
-             storedDash.customQuantitatives = [
-               { id: 'q-1', varId: 'v-7', label: 'Água de Alimentação', max: storedDash.quantMaxes?.agua || 5000, color: '#3b82f6', iconName: 'Droplets', factor: 1, unitOverride: 'ton' },
-               { id: 'q-2', varId: 'v-6', label: 'Vapor Gerado', max: storedDash.quantMaxes?.vapor || 2000, color: '#22c55e', iconName: 'Wind', factor: 1, unitOverride: 'ton' },
-               { id: 'q-3', varId: 'v-9', label: 'Energia Gerada', max: storedDash.quantMaxes?.energiaGerada || 50000, color: '#f97316', iconName: 'Zap', factor: 1000, unitOverride: 'kW' },
-               { id: 'q-4', varId: 'v-10', label: 'Energia Consumida', max: storedDash.quantMaxes?.energiaConsumida || 20000, color: '#a855f7', iconName: 'Activity', factor: 1, unitOverride: 'kWh' },
-               { id: 'q-5', varId: 'v-8', label: 'Combustível (Cavaco)', max: storedDash.quantMaxes?.combustivel || 3000, color: '#eab308', iconName: 'Flame', factor: 1, unitOverride: 'm³' }
-             ]
-          }
-          if (!storedDash.customKPIs) {
-             storedDash.customKPIs = [
-               { id: 'k-1', label: 'kW Gerado / ton Vapor', numVarId: 'v-9', numFactor: 1000, denVarId: 'v-6', denFactor: 1, unit: 'kW/ton', meta: storedDash.kpiMetas?.kwhGer || null, inverse: false, color: '#f97316' },
-               { id: 'k-2', label: 'kWh Consumido / ton Vapor', numVarId: 'v-10', numFactor: 1, denVarId: 'v-6', denFactor: 1, unit: 'kWh/ton', meta: storedDash.kpiMetas?.kwhCon || null, inverse: true, color: '#a855f7' },
-               { id: 'k-3', label: 'kg Vapor / m³ Cavaco', numVarId: 'v-6', numFactor: 1000, denVarId: 'v-8', denFactor: 1, unit: 'kg/m³', meta: storedDash.kpiMetas?.vaporCavaco || null, inverse: false, color: '#22c55e' }
-             ]
-          }
-          setDashboardConfig({
-            ...storedDash,
-            customQuantitatives: storedDash.customQuantitatives,
-            customKPIs:          storedDash.customKPIs,
-            qualMetas:           { ...DEFAULT_DASHBOARD_CONFIG.qualMetas, ...storedDash.qualMetas }
-          })
-        }
-      } catch (e) {
-        console.error("Critical error connecting to Supabase:", e)
-      } finally {
-        setIsLoaded(true)
-      }
+    } catch (e) {
+      console.error('Erro ao carregar dados do localStorage:', e)
+    } finally {
+      setIsLoaded(true)
     }
-    loadData()
   }, [])
 
-  // --- Unified Sync Engine (Debounce) ---
+  // --- Unified Sync Engine (Debounce → localStorage) ---
   const syncTimerRef = useRef(null)
   const isInitialLoad = useRef(true)
 
   useEffect(() => {
-    // Evita rodar no carregamento inicial antes dos dados reais virem do Supabase
     if (!isLoaded) return
     if (isInitialLoad.current) {
       isInitialLoad.current = false
@@ -145,33 +113,17 @@ export function AppDataProvider({ children }) {
 
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
 
-    syncTimerRef.current = setTimeout(async () => {
-      if (!supabase) return
-      
-      console.log("🔄 Sincronizando dados com Supabase...")
-      
-      const syncTasks = [
-        { id: 'thermiq_categories', data: categories },
-        { id: 'thermiq_reports', data: reports },
-        { id: 'thermiq_downtimes', data: downtimes },
-        { id: 'thermiq_maintenances', data: maintenances },
-        { id: 'thermiq_dashboard_config', data: dashboardConfig }
-      ]
-
+    syncTimerRef.current = setTimeout(() => {
       try {
-        const results = await Promise.all(
-          syncTasks.map(t => supabase.from('app_data').upsert({ id: t.id, data: t.data }))
-        )
-        const errors = results.filter(r => r.error)
-        if (errors.length > 0) {
-          console.error(`❌ Erro em ${errors.length} tarefas de sincronização:`, errors)
-        } else {
-          console.log("✅ Dados sincronizados com sucesso.")
-        }
+        localStorage.setItem('thermiq_categories', JSON.stringify(categories))
+        localStorage.setItem('thermiq_reports', JSON.stringify(reports))
+        localStorage.setItem('thermiq_downtimes', JSON.stringify(downtimes))
+        localStorage.setItem('thermiq_maintenances', JSON.stringify(maintenances))
+        localStorage.setItem('thermiq_dashboard_config', JSON.stringify(dashboardConfig))
       } catch (err) {
-        console.error("❌ Erro fatal na sincronização:", err)
+        console.error('❌ Erro ao persistir dados no localStorage:', err)
       }
-    }, 1500) // 1.5s de debounce
+    }, 1500)
 
     return () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current) }
   }, [categories, reports, downtimes, maintenances, dashboardConfig, isLoaded])
@@ -290,40 +242,31 @@ export function AppDataProvider({ children }) {
     }
   }
 
+  // PERF-01: value memoizado para evitar re-renders desnecessários em consumidores
+  const contextValue = useMemo(() => ({
+    categories, reports, downtimes, maintenances, dashboardConfig,
+    addCategory, updateCategory, deleteCategory,
+    addVariable, updateVariable, deleteVariable,
+    getAllVariables,
+    addReport, updateReport, deleteReport,
+    addDowntime, updateDowntime, deleteDowntime,
+    addMaintenance, updateMaintenance, deleteMaintenance,
+    updateDashboardConfig,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [categories, reports, downtimes, maintenances, dashboardConfig])
+
+  if (!isLoaded) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column' }}>
+        <h2 style={{ marginBottom: '16px' }}>Carregando dados...</h2>
+        <p style={{ opacity: 0.7 }}>Aguarde um momento.</p>
+      </div>
+    )
+  }
+
   return (
-    <AppDataContext.Provider value={{
-      categories, reports, downtimes, maintenances, dashboardConfig,
-      addCategory, updateCategory, deleteCategory,
-      addVariable, updateVariable, deleteVariable,
-      getAllVariables,
-      addReport, updateReport, deleteReport,
-      addDowntime, updateDowntime, deleteDowntime,
-      addMaintenance, updateMaintenance, deleteMaintenance,
-      updateDashboardConfig,
-    }}>
-      {fatalError ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column', padding: '20px' }}>
-           <h2 style={{ marginBottom: '16px', color: '#ef4444'}}>Erro de Conexão Crítico!</h2>
-            <p style={{ opacity: 0.9, maxWidth: '500px', textAlign: 'center', lineHeight: '1.5' }}>
-              O aplicativo não detectou as chaves de acesso ao banco de dados Supabase.<br/><br/>
-              Se você está executando na Vercel, certifique-se de preencher as variáveis <br/><br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_URL</b><br/> e <br/><b style={{color: '#3b82f6'}}>VITE_SUPABASE_ANON_KEY</b><br/><br/> lá no menu "Settings - Environment Variables" da Vercel e depois não se esqueça de clicar em "Redeploy".
-            </p>
-            <div style={{marginTop: '30px', padding: '15px', background: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px', maxWidth: '500px', width: '100%'}}>
-               <p style={{fontSize: '13px', color: '#a1a1aa', marginBottom: '8px'}}>Debug do Vercel:</p>
-               <p style={{fontSize: '12px', wordBreak: 'break-all', color: '#fbbf24', margin: '4px 0'}}>
-                 URLLida: {import.meta.env.VITE_SUPABASE_URL || 'não definida'}
-               </p>
-               <p style={{fontSize: '12px', wordBreak: 'break-all', color: '#fbbf24', margin: '4px 0'}}>
-                 KeyLida: {import.meta.env.VITE_SUPABASE_ANON_KEY ? import.meta.env.VITE_SUPABASE_ANON_KEY.substring(0, 10) + '...' : 'não definida'}
-               </p>
-            </div>
-        </div>
-      ) : !isLoaded ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#09090b', color: '#fff', flexDirection: 'column' }}>
-           <h2 style={{ marginBottom: '16px'}}>Conectando ao banco de dados...</h2>
-           <p style={{ opacity: 0.7 }}>Aguarde enquanto sincronizamos as informações.</p>
-        </div>
-      ) : children}
+    <AppDataContext.Provider value={contextValue}>
+      {children}
     </AppDataContext.Provider>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, X, Check, Wrench } from 'lucide-react'
@@ -28,13 +28,14 @@ export default function Manutencao() {
   const [filterPrior, setFilterPrior]   = useState('Todos')
   const [confirmId, setConfirmId]     = useState(null)
 
-  const filtered = maintenances.filter(m => {
+  // PERF-04: memoizado — só recalcula quando maintenances ou filtros mudam
+  const filtered = useMemo(() => maintenances.filter(m => {
     if (dateStart && m.data < dateStart) return false
     if (dateEnd && m.data > dateEnd) return false
     if (filterCentro !== 'Todos' && m.centro !== filterCentro) return false
     if (filterPrior !== 'Todos' && m.prioridade !== filterPrior) return false
     return true
-  })
+  }), [maintenances, dateStart, dateEnd, filterCentro, filterPrior])
 
   function handleConfirmDelete() { 
     deleteMaintenance(confirmId)

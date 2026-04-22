@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
@@ -92,7 +92,11 @@ export default function Lancamento() {
 
   const allVars   = getAllVariables()
   const selVars   = allVars.filter(v => draft.selectedVarIds.includes(v.id))
-  const timeSlots = generateTimeSlots(draft.turnoInfo.horaInicio, draft.turnoInfo.horaFim)
+  // PERF-03: memoizado — só recalcula quando horaInicio ou horaFim mudam
+  const timeSlots = useMemo(
+    () => generateTimeSlots(draft.turnoInfo.horaInicio, draft.turnoInfo.horaFim),
+    [draft.turnoInfo.horaInicio, draft.turnoInfo.horaFim]
+  )
 
   /* ── Helpers de edição ── */
   function setVal(varId, field, val) {

@@ -220,6 +220,7 @@ function CategoryRow({ cat, isAdmin }) {
 export default function Variaveis() {
   const { categories, addCategory, dashboardConfig, updateDashboardConfig, getAllVariables } = useAppData()
   const { isAdmin }                 = useAuth()
+  const admin                       = isAdmin() // PERF-02: calculado uma vez, evita 8+ chamadas por render
   const [newCat, setNewCat]         = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [cfgOpen, setCfgOpen]       = useState(false)
@@ -278,7 +279,7 @@ export default function Variaveis() {
             <h1>Variáveis de Processo</h1>
             <p>Categorias e variáveis monitoradas nas operações das caldeiras</p>
           </div>
-          {isAdmin() && (
+          {admin && (
             <button className="btn btn-primary" onClick={() => setNewCat(true)}>
               <Plus size={16}/> Nova Categoria
             </button>
@@ -312,7 +313,7 @@ export default function Variaveis() {
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:'var(--space-sm)' }}>
           {categories.map(cat => (
-            <CategoryRow key={cat.id} cat={cat} isAdmin={isAdmin()} />
+            <CategoryRow key={cat.id} cat={cat} isAdmin={admin} />
           ))}
         </div>
       )}
@@ -364,7 +365,7 @@ export default function Variaveis() {
                       background:'white', border:`1px solid var(--border)`,
                       padding: '16px', position:'relative', borderRadius: 'var(--radius-md)'
                     }}>
-                      {isAdmin() && (
+                      {admin && (
                          <button onClick={() => rmQuant(i)} className="btn btn-sm btn-ghost" style={{ position:'absolute', top:12, right:12, color:'var(--danger)', padding: 6, borderRadius: 6 }}>
                            <Trash2 size={14} />
                          </button>
@@ -410,7 +411,7 @@ export default function Variaveis() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                          <input className="cell-input" value={k.label} onChange={e => updateKpi(i, 'label', e.target.value)} disabled={!isAdmin()} placeholder="Nome do KPI" style={{ flex: 1, margin: 0 }} />
                          <input type="color" value={k.color} onChange={e => updateKpi(i, 'color', e.target.value)} disabled={!isAdmin()} style={{ width: 40, height: 38, padding: 2, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8 }} />
-                         {isAdmin() && (
+                         {admin && (
                            <button onClick={() => rmKpi(i)} className="btn btn-sm btn-ghost" style={{ color: 'var(--danger)', padding: 8 }}>
                              <Trash2 size={16} />
                            </button>

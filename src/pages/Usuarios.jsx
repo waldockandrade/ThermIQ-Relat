@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuth, hashPassword } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, X, Check, Users, Shield, User } from 'lucide-react'
-import { supabase } from '../lib/supabase'
 
+const USERS_KEY = 'thermiq_users'
 const EMPTY = { name: '', email: '', password: '', role: 'staff', contact: '' }
+
+function getUsersFromLS() {
+  try {
+    const raw = localStorage.getItem(USERS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveUsersToLS(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users))
+}
 
 export default function Usuarios() {
   const { isAdmin, user: currentUser } = useAuth()
@@ -16,25 +27,18 @@ export default function Usuarios() {
   const [dbLoading, setDbLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchUsers() {
-       const { data } = await supabase.from('app_data').select('*').eq('id', 'thermiq_users').single()
-       if (data?.data) {
-         setUsers(data.data)
-       }
-       setDbLoading(false)
-    }
-    fetchUsers()
+    setUsers(getUsersFromLS())
+    setDbLoading(false)
   }, [])
 
-  async function saveToDB(updatedArray) {
+  function saveToDB(updatedArray) {
     setUsers(updatedArray)
-    await supabase.from('app_data').upsert({ id: 'thermiq_users', data: updatedArray })
+    saveUsersToLS(updatedArray)
   }
 
   function openAdd() { setForm(EMPTY); setEditId(null); setError(''); setShowModal(true) }
   
   function openEdit(u) {
-    // Não carregamos a senha real no edit para não confundi-la. Caso a pessoa digite algo, atualizamos.
     setForm({ name: u.name, email: u.email, password: '', role: u.role, contact: u.contact || '' })
     setEditId(u.id)
     setError('')
@@ -61,33 +65,29 @@ export default function Usuarios() {
            return {
              ...u,
              ...form,
-             // Só sobrepõe a senha se ela foi alterada pelo form
              password: finalPassword || u.password
            }
         }
         return u
       })
     } else {
-      updated = [...users, { ...form, password: finalPassword, id: `usr-${Date.now()}` }]
+      updated = [...users, { ...form, password: finalPassword, id: `usr-${crypto.randomUUID()}` }]
     }
     
-    await saveToDB(updated)
+    saveToDB(updated)
     setShowModal(false)
   }
 
-  async function handleDelete(id) {
-    // A-07: não permite deletar o próprio usuário logado
+  function handleDelete(id) {
     if (id === currentUser?.id) {
       alert('Você não pode excluir sua própria conta enquanto está logado.')
       return
     }
-    const updated = users.filter(u => u.id !== id)
-    await saveToDB(updated)
+    saveToDB(users.filter(u => u.id !== id))
   }
 
   function set(field, val) { setForm(p => ({ ...p, [field]: val })) }
 
-  // B-01: redireciona em vez de render condicional
   if (!isAdmin()) return <Navigate to="/variaveis" replace />
 
   return (
@@ -108,7 +108,7 @@ export default function Usuarios() {
         <div className="table-wrapper">
           {dbLoading ? (
              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-               Sincronizando banco de dados...
+               Carregando usuários...
              </div>
           ) : (
             <table>
@@ -234,4 +234,3 @@ export default function Usuarios() {
     </div>
   )
 }
-

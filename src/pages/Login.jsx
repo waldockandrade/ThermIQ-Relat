@@ -61,12 +61,12 @@ export default function Login() {
 
           <div className="brand-stats">
             <div className="brand-stat">
-              <span className="bs-val">100%</span>
-              <span className="bs-lbl">Cloud</span>
+              <span className="bs-val">Local</span>
+              <span className="bs-lbl">Armazenamento</span>
             </div>
             <div className="brand-stat">
-              <span className="bs-val">Real</span>
-              <span className="bs-lbl">Time</span>
+              <span className="bs-val">100%</span>
+              <span className="bs-lbl">Offline</span>
             </div>
           </div>
         </div>

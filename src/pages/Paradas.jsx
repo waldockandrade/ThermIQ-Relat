@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useAppData } from '../context/AppDataContext'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, X, Check, Clock } from 'lucide-react'
@@ -44,21 +44,22 @@ export default function Paradas() {
   const [dateEnd, setDateEnd]     = useState('')
   const [confirmId, setConfirmId] = useState(null)
 
-  const filtered = downtimes.filter(dt => {
+  // PERF-04: memoizado — só recalcula quando downtimes ou filtros mudam
+  const filtered = useMemo(() => downtimes.filter(dt => {
     if (filterType !== 'Todos' && dt.tipo !== filterType) return false
     if (dateStart && dt.data < dateStart) return false
     if (dateEnd && dt.data > dateEnd) return false
     return true
-  })
+  }), [downtimes, filterType, dateStart, dateEnd])
 
-  const totalMinutes = filtered.reduce((acc, dt) => {
+  const totalMinutes = useMemo(() => filtered.reduce((acc, dt) => {
     if (!dt.inicio || !dt.fim) return acc
     const [ih, im] = dt.inicio.split(':').map(Number)
     const [fh, fm] = dt.fim.split(':').map(Number)
     let diff = (fh * 60 + fm) - (ih * 60 + im)
     if (diff < 0) diff += 24 * 60
     return acc + diff
-  }, 0)
+  }, 0), [filtered])
 
   function handleConfirmDelete() { 
     deleteDowntime(confirmId)

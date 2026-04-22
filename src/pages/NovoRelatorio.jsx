@@ -68,10 +68,6 @@ export default function NovoRelatorio() {
     setOperadores(prev => prev.filter(o => o.id !== id))
   }
 
-  function removeOperador(id) {
-    setOperadores(prev => prev.filter(o => o.id !== id))
-  }
-
   function handleSubmit(e) {
     e.preventDefault()
     const draft = {
@@ -170,9 +166,6 @@ export default function NovoRelatorio() {
         </button>
       </div>
 
-      {/* A seção de Combustível foi movida para a tela de Lançamento */}
-
-      {/* Diário de Bordo foi movido para a tela de Lançamento */}
 
       {/* ── Seção 4: Variáveis ── */}
       <div className="card">
