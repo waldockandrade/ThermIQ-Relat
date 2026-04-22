@@ -88,15 +88,16 @@ export default function Lancamento() {
     setValues(init)
   }, [])
 
+  // PERF-03: deve vir ANTES do early return — hooks não podem ser chamados após return condicional
+  const timeSlots = useMemo(() => {
+    if (!draft) return []
+    return generateTimeSlots(draft.turnoInfo.horaInicio, draft.turnoInfo.horaFim)
+  }, [draft?.turnoInfo?.horaInicio, draft?.turnoInfo?.horaFim])
+
   if (!draft) return null
 
   const allVars   = getAllVariables()
   const selVars   = allVars.filter(v => draft.selectedVarIds.includes(v.id))
-  // PERF-03: memoizado — só recalcula quando horaInicio ou horaFim mudam
-  const timeSlots = useMemo(
-    () => generateTimeSlots(draft.turnoInfo.horaInicio, draft.turnoInfo.horaFim),
-    [draft.turnoInfo.horaInicio, draft.turnoInfo.horaFim]
-  )
 
   /* ── Helpers de edição ── */
   function setVal(varId, field, val) {
