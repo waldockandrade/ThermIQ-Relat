@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Flame, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle } from 'lucide-react'
+import logoSrc from '../assets/logo.svg'
 import './Login.css'
 
 export default function Login() {
@@ -32,29 +33,11 @@ export default function Login() {
         {/* Lado Esquerdo — Branding */}
         <div className="login-brand">
           <div className="brand-logo-framed">
-            <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Rounded Square Frame — Sharper for formal industrial look */}
-              <rect x="2" y="2" width="36" height="36" rx="2" stroke="currentColor" strokeWidth="2.5" className="logo-frame" />
-              
-              {/* Flame Shape */}
-              <path d="M16 8 C16 8 8 16 8 24 C8 30 11.5 34 16 34 C20.5 34 24 30 24 24 C24 19 20 14 18 11 C18 11 18 17 15 19 C12 21 10 24 12 27 C12 27 9 25 9 21 C9 17 16 8 16 8Z"
-                fill="url(#flameGradLogin)" />
-              
-              {/* Leaf Shape */}
-              <path d="M18 26 C18 26 15 21 21 17 C27 13 31 16 31 16 C31 16 28 26 18 26Z"
-                fill="url(#leafGradLogin)" />
-                
-              <defs>
-                <linearGradient id="flameGradLogin" x1="16" y1="8" x2="16" y2="34" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#f97316"/>
-                  <stop offset="100%" stopColor="#ea6c10"/>
-                </linearGradient>
-                <linearGradient id="leafGradLogin" x1="18" y1="28" x2="31" y2="15" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#4ade80"/>
-                  <stop offset="100%" stopColor="#16a34a"/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <img
+              src={logoSrc}
+              alt="ThermIQ Energy"
+              style={{ width: 180, height: 'auto', display: 'block', margin: '0 auto' }}
+            />
           </div>
           <h1>Therm<span>IQ</span></h1>
           <p>Plataforma técnica de gestão e monitoramento de ativos térmicos industriais.</p>

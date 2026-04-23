@@ -24,25 +24,29 @@
 }
 
 .logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--text-muted); /* Color for the frame */
   transition: all var(--transition-normal);
 }
 
 .logo-icon:hover {
-  color: var(--text-primary);
   transform: scale(1.05);
 }
 
-.logo-icon svg {
-  width: 38px;
-  height: 38px;
+.logo-img {
+  width: 48px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  /* Inverte para exibir bem em fundo escuro se necessário */
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+  transition: all var(--transition-normal);
+}
+
+.sidebar.collapsed .logo-img {
+  width: 36px;
 }
 
 .logo-icon .logo-frame {
